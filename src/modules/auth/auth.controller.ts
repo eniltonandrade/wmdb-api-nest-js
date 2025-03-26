@@ -15,7 +15,7 @@ import {
 import { UserPayload } from './jwt.strategy'
 import { Public } from './public'
 
-@Controller('auth')
+@Controller('sessions')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

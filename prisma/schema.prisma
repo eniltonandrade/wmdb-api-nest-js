@@ -9,18 +9,26 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum RatingSource {
+  IMDB
+  TMDB
+  ROTTEN_TOMATOES
+  METACRITIC
 }
 
 model User {
-  id              String  @id @default(uuid())
+  id              String        @id @default(uuid())
   name            String?
   username        String?
-  email           String  @unique
-  passwordHash    String? @map("password_hash")
-  avatarUrl       String? @map("avatar_url")
-  preferredRating String? @map("preferred_rating")
+  email           String        @unique
+  passwordHash    String?       @map("password_hash")
+  avatarUrl       String?       @map("avatar_url")
+  preferredRating RatingSource? @map("preferred_rating")
 
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
@@ -86,7 +94,8 @@ model Movie {
   cast      CastOnMovies[]
   lists     MoviesOnLists[]
 
-  userHistories History[]
+  userHistories  History[]
+  PersonOnMovies PersonOnMovies[]
 
   @@map("movies")
 }
@@ -111,27 +120,18 @@ model Company {
 }
 
 model Person {
-  id          String         @id @default(uuid())
-  name        String
-  tmdbId      Int            @unique
-  gender      Int?
-  profilePath String?        @map("profile_path")
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @updatedAt @map("updated_at")
-  crew        CrewOnMovies[]
-  cast        CastOnMovies[]
+  id             String           @id @default(uuid())
+  name           String
+  tmdbId         Int              @unique
+  gender         Int?
+  profilePath    String?          @map("profile_path")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  crew           CrewOnMovies[]
+  cast           CastOnMovies[]
+  PersonOnMovies PersonOnMovies[]
 
   @@map("people")
-}
-
-model RatingSource {
-  id      String            @id @default(uuid())
-  name    String
-  suffix  String
-  acronym String            @unique
-  movies  RatingsOnMovies[]
-
-  @@map("rating_sources")
 }
 
 model GenresOnMovies {
@@ -159,16 +159,15 @@ model CompaniesOnMovies {
 }
 
 model RatingsOnMovies {
-  value          Float
-  movieId        String    @map("movie_id")
-  ratingSourceId String    @map("rating_source_id")
-  updatedAt      DateTime? @map("updated_at")
+  value        Float
+  movieId      String       @map("movie_id")
+  ratingSource RatingSource @map("rating_source")
+  updatedAt    DateTime?    @map("updated_at")
 
-  source RatingSource @relation(fields: [ratingSourceId], references: [id], onDelete: Cascade)
-  movie  Movie        @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
-  @@id([ratingSourceId, movieId])
-  @@unique([ratingSourceId, movieId])
+  @@id([ratingSource, movieId])
+  @@unique([ratingSource, movieId])
   @@map("movie_ratings")
 }
 
@@ -197,6 +196,29 @@ model CastOnMovies {
   @@id([personId, movieId])
   @@unique([personId, movieId])
   @@map("movie_cast")
+}
+
+enum Role {
+  ACTOR
+  ACTRESS
+  DIRECTOR
+  WRITER
+  PRODUCER
+}
+
+model PersonOnMovies {
+  personId  String  @map("person_id")
+  movieId   String  @map("movie_id")
+  character String?
+  order     Int?
+  role      Role
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  movie  Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@id([personId, movieId, role])
+  @@unique([personId, movieId, role])
+  @@map("movie_person")
 }
 
 enum ListType {

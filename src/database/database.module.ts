@@ -5,10 +5,11 @@ import {
   DrizzleAsyncProvider,
   drizzleProvider,
 } from './drizzle/drizzle.provider'
+import { PrismaService } from './prisma/prisma.service'
 
 @Module({
   imports: [],
-  providers: [...drizzleProvider, EnvService],
-  exports: [DrizzleAsyncProvider],
+  providers: [...drizzleProvider, EnvService, PrismaService],
+  exports: [DrizzleAsyncProvider, PrismaService],
 })
 export class DatabaseModule {}

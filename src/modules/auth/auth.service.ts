@@ -1,29 +1,43 @@
 import {
   ConflictException,
-  Inject,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import { User } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
-import { eq } from 'drizzle-orm'
-import { MySql2Database } from 'drizzle-orm/mysql2'
-import { DrizzleAsyncProvider } from 'src/database/drizzle/drizzle.provider'
-import * as schema from 'src/database/drizzle/schema'
+import { PrismaService } from 'src/database/prisma/prisma.service'
 
 import { RegisterDto } from './dto/register.dto'
 
 @Injectable()
 export class AuthService {
   constructor(
-    @Inject(DrizzleAsyncProvider) private db: MySql2Database<typeof schema>,
+    private prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
 
-  async register({ name, email, password }: RegisterDto) {
-    const userWithSameEmail = await this.db.query.users.findFirst({
-      where: eq(schema.users.email, email),
+  private async getUserByEmail(email: string): Promise<User | null> {
+    return await this.prisma.user.findUnique({
+      where: { email },
     })
+  }
+
+  private async getUserById(id: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    })
+
+    if (!user) {
+      throw new NotFoundException()
+    }
+
+    return user
+  }
+
+  async register({ name, email, password }: RegisterDto): Promise<User> {
+    const userWithSameEmail = await this.getUserByEmail(email)
 
     if (userWithSameEmail) {
       throw new ConflictException()
@@ -31,39 +45,37 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    const newUser = this.db
-      .insert(schema.users)
-      .values({
+    const newUser = await this.prisma.user.create({
+      data: {
         email,
         name,
         passwordHash: hashedPassword,
-      })
-      .$returningId()
+      },
+    })
+
     return newUser
   }
 
-  async updatePassword(id: string, password: string) {
-    const userExists = await this.db.query.users.findFirst({
-      where: eq(schema.users.id, id),
-    })
+  async updatePassword(id: string, password: string): Promise<void> {
+    const userExists = await this.getUserById(id)
     if (!userExists) {
       throw new ConflictException()
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    await this.db
-      .update(schema.users)
-      .set({
+    await this.prisma.user.update({
+      data: {
         passwordHash: hashedPassword,
-      })
-      .where(eq(schema.users.id, id))
+      },
+      where: {
+        id,
+      },
+    })
   }
 
   async authenticate(email: string, password: string) {
-    const userFromEmail = await this.db.query.users.findFirst({
-      where: eq(schema.users.email, email),
-    })
+    const userFromEmail = await this.getUserByEmail(email)
 
     if (!userFromEmail) {
       throw new UnauthorizedException('Invalid credentials')

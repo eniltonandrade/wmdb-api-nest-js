@@ -1,26 +1,23 @@
 import {
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { eq } from 'drizzle-orm'
-import { MySql2Database } from 'drizzle-orm/mysql2'
-import { DrizzleAsyncProvider } from 'src/database/drizzle/drizzle.provider'
-import * as schema from 'src/database/drizzle/schema'
+import { Genre } from '@prisma/client'
+import { PrismaService } from 'src/database/prisma/prisma.service'
 
 import { CreateGenreDto } from './dto/create-genre.dto'
 import { UpdateGenreDto } from './dto/update-genre.dto'
 
 @Injectable()
 export class GenresService {
-  constructor(
-    @Inject(DrizzleAsyncProvider) private db: MySql2Database<typeof schema>,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create({ name, tmdb_id }: CreateGenreDto) {
-    const genreAlreadyExists = await this.db.query.genres.findFirst({
-      where: eq(schema.genres.tmdbId, tmdb_id),
+  async create({ name, tmdb_id }: CreateGenreDto): Promise<Genre> {
+    const genreAlreadyExists = await this.prisma.genre.findUnique({
+      where: {
+        tmdbId: tmdb_id,
+      },
     })
 
     if (genreAlreadyExists) {
@@ -29,41 +26,57 @@ export class GenresService {
       )
     }
 
-    await this.db.insert(schema.genres).values({
-      name,
-      tmdbId: tmdb_id,
+    const genre = await this.prisma.genre.create({
+      data: {
+        name,
+        tmdbId: tmdb_id,
+      },
     })
+
+    return genre
   }
 
-  async findAll() {
-    return await this.db.query.genres.findMany()
+  async findAll(): Promise<Genre[]> {
+    return await this.prisma.genre.findMany()
   }
 
-  async findOne(id: string) {
-    return await this.db.query.genres.findFirst({
-      where: eq(schema.genres.id, id),
+  async findOne(id: string): Promise<Genre> {
+    const genre = await this.prisma.genre.findUnique({
+      where: { id },
     })
+
+    if (!genre) {
+      throw new NotFoundException(`Genre ${id} not found`)
+    }
+
+    return genre
   }
 
-  async update(id: string, { name, tmdb_id }: UpdateGenreDto) {
-    const genreExists = await this.db.query.genres.findFirst({
-      where: eq(schema.genres.id, id),
+  async update(id: string, { name, tmdb_id }: UpdateGenreDto): Promise<void> {
+    const genreExists = await this.prisma.genre.findUnique({
+      where: { id },
     })
 
     if (!genreExists) {
       throw new NotFoundException(`Genre with TMDB ID ${tmdb_id} not found`)
     }
 
-    await this.db
-      .update(schema.genres)
-      .set({
+    await this.prisma.genre.update({
+      data: {
         name,
         tmdbId: tmdb_id,
-      })
-      .where(eq(schema.genres.id, id))
+      },
+      where: {
+        id,
+      },
+    })
   }
 
-  async remove(id: string) {
-    return await this.db.delete(schema.genres).where(eq(schema.genres.id, id))
+  async remove(id: string): Promise<void> {
+    await this.prisma.genre.delete({
+      where: {
+        id,
+      },
+    })
   }
 }
