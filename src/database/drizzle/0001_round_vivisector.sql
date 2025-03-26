@@ -1,0 +1,14 @@
+-- CREATE TABLE `movie_person` (
+-- 	`person_id` varchar(191) NOT NULL,
+-- 	`movie_id` varchar(191) NOT NULL,
+-- 	`character` varchar(191),
+-- 	`order` int,
+-- 	`role` enum('CAST','DIRECTOR','WRITER','PRODUCER') NOT NULL,
+-- 	CONSTRAINT `movie_person_id_movie_id_role` PRIMARY KEY(`person_id`,`movie_id`,`role`),
+-- 	CONSTRAINT `movie_person_id_movie_id_key` UNIQUE(`person_id`,`movie_id`,`role`)
+-- );
+-- --> statement-breakpoint
+-- ALTER TABLE `movies` MODIFY COLUMN `created_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3);--> statement-breakpoint
+-- ALTER TABLE `movies` MODIFY COLUMN `updated_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);--> statement-breakpoint
+-- ALTER TABLE `movie_person` ADD CONSTRAINT `movie_person_person_id_people_id_fk` FOREIGN KEY (`person_id`) REFERENCES `people`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+-- ALTER TABLE `movie_person` ADD CONSTRAINT `movie_person_movie_id_movies_id_fk` FOREIGN KEY (`movie_id`) REFERENCES `movies`(`id`) ON DELETE cascade ON UPDATE cascade;

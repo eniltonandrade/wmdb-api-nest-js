@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1742413611355,
+      "tag": "0000_curious_the_hood",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1742910128914,
+      "tag": "0001_round_vivisector",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1742912595897,
+      "tag": "0003_misty_invaders",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1742912728271,
+      "tag": "0004_clever_ironclad",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1742912876569,
+      "tag": "0005_real_lucky_pierre",
+      "breakpoints": true
+    }
+  ]
+}

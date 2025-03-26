@@ -1,0 +1,281 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String  @id @default(uuid())
+  name            String?
+  username        String?
+  email           String  @unique
+  passwordHash    String? @map("password_hash")
+  avatarUrl       String? @map("avatar_url")
+  preferredRating String? @map("preferred_rating")
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  tokens       Token[]
+  accounts     Account[]
+  tags         Tag[]
+  lists        List[]
+  movieHistory History[]
+
+  @@map("users")
+}
+
+enum TokenType {
+  PASSWORD_RECOVER
+}
+
+model Token {
+  id        String    @id @default(uuid())
+  type      TokenType
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String    @map("user_id")
+
+  @@map("tokens")
+}
+
+enum AccountProvider {
+  GOOGLE
+}
+
+model Account {
+  id                String          @id @default(uuid())
+  provider          AccountProvider
+  providerAccountId String          @unique @map("provider_account_id")
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String          @map("user_id")
+
+  @@unique([provider, userId])
+  @@map("accounts")
+}
+
+model Movie {
+  id                   String   @id @default(uuid())
+  title                String
+  originalTitle        String   @map("original_title")
+  posterPath           String?  @map("poster_path")
+  backdropPath         String?  @map("backdrop_path")
+  releaseDate          DateTime @map("release_date")
+  runtime              Int?
+  imdbId               String   @unique @map("imdb_id")
+  tmdbId               Int      @unique @map("tmdb_id")
+  imdbRating           Float?   @map("imdb_rating")
+  tmdbRating           Float?   @map("tmdb_rating")
+  metacriticRating     Float?   @map("metacritic_rating")
+  rottenTomatoesRating Float?   @map("rotten_tomatoes_rating")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  genres    GenresOnMovies[]
+  ratings   RatingsOnMovies[]
+  companies CompaniesOnMovies[]
+  crew      CrewOnMovies[]
+  cast      CastOnMovies[]
+  lists     MoviesOnLists[]
+
+  userHistories History[]
+
+  @@map("movies")
+}
+
+model Genre {
+  id     String           @id @default(uuid())
+  name   String
+  tmdbId Int              @unique
+  movies GenresOnMovies[]
+
+  @@map("genres")
+}
+
+model Company {
+  id       String              @id @default(uuid())
+  name     String
+  tmdbId   Int                 @unique
+  logoPath String?             @map("logo_path")
+  movies   CompaniesOnMovies[]
+
+  @@map("companies")
+}
+
+model Person {
+  id          String         @id @default(uuid())
+  name        String
+  tmdbId      Int            @unique
+  gender      Int?
+  profilePath String?        @map("profile_path")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  crew        CrewOnMovies[]
+  cast        CastOnMovies[]
+
+  @@map("people")
+}
+
+model RatingSource {
+  id      String            @id @default(uuid())
+  name    String
+  suffix  String
+  acronym String            @unique
+  movies  RatingsOnMovies[]
+
+  @@map("rating_sources")
+}
+
+model GenresOnMovies {
+  movieId String @map("movie_id")
+  genreId String @map("genre_id")
+
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  genre Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([genreId, movieId])
+  @@unique([genreId, movieId])
+  @@map("movie_genres")
+}
+
+model CompaniesOnMovies {
+  movieId   String @map("movie_id")
+  companyId String @map("company_id")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  movie   Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, movieId])
+  @@unique([companyId, movieId])
+  @@map("movie_companies")
+}
+
+model RatingsOnMovies {
+  value          Float
+  movieId        String    @map("movie_id")
+  ratingSourceId String    @map("rating_source_id")
+  updatedAt      DateTime? @map("updated_at")
+
+  source RatingSource @relation(fields: [ratingSourceId], references: [id], onDelete: Cascade)
+  movie  Movie        @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@id([ratingSourceId, movieId])
+  @@unique([ratingSourceId, movieId])
+  @@map("movie_ratings")
+}
+
+model CrewOnMovies {
+  personId String @map("person_id")
+  movieId  String @map("movie_id")
+  job      String
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  movie  Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@id([personId, movieId, job])
+  @@unique([personId, movieId, job])
+  @@map("movie_crew")
+}
+
+model CastOnMovies {
+  personId  String @map("person_id")
+  movieId   String @map("movie_id")
+  character String
+  order     Int
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  movie  Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@id([personId, movieId])
+  @@unique([personId, movieId])
+  @@map("movie_cast")
+}
+
+enum ListType {
+  WATCHLIST
+  CUSTOM
+}
+
+enum ListVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+model List {
+  id          String         @id @default(uuid())
+  type        ListType
+  name        String
+  description String?
+  visibility  ListVisibility
+  userId      String         @map("user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movies MoviesOnLists[]
+
+  @@map("lists")
+}
+
+model MoviesOnLists {
+  id      String @id @default(uuid())
+  movieId String @map("movie_id")
+
+  movie  Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  list   List   @relation(fields: [listId], references: [id], onDelete: Cascade)
+  listId String @map("list_id")
+
+  @@unique([listId, movieId])
+  @@map("list_movies")
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  histories TagsOnHistory[]
+
+  @@map("tags")
+}
+
+model History {
+  id      String   @id @default(uuid())
+  userId  String   @map("user_id")
+  movieId String   @map("movie_id")
+  date    DateTime
+  review  String?
+  rating  Float?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  movie Movie           @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags  TagsOnHistory[]
+
+  @@unique([movieId, userId])
+  @@map("histories")
+}
+
+model TagsOnHistory {
+  historyId String
+  tagId     String
+
+  history History @relation(fields: [historyId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([historyId, tagId])
+}
