@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { Person, Prisma } from '@prisma/client'
-import { PrismaService } from 'src/database/prisma/prisma.service'
-import { ApiListResponseDto } from 'src/types/api-responses'
+
+import { PrismaService } from '@/database/prisma/prisma.service'
+import { ApiListResponseDto } from '@/types/api-responses'
 
 @Injectable()
 export class PeopleService {

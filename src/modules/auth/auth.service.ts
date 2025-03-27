@@ -7,7 +7,8 @@ import {
 import { JwtService } from '@nestjs/jwt'
 import { User } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
-import { PrismaService } from 'src/database/prisma/prisma.service'
+
+import { PrismaService } from '@/database/prisma/prisma.service'
 
 import { RegisterDto } from './dto/register.dto'
 

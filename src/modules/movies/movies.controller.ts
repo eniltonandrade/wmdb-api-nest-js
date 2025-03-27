@@ -1,8 +1,9 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common'
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
 import { Movie } from '@prisma/client'
-import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe'
-import { ApiListResponseDto } from 'src/types/api-responses'
+
+import { ZodValidationPipe } from '@/pipes/zod-validation.pipe'
+import { ApiListResponseDto } from '@/types/api-responses'
 
 import { Public } from '../auth/public'
 import { CreateMovieDTO, createMovieSchema } from './dto/create-movie-dto'
@@ -15,7 +16,7 @@ export class MoviesController {
 
   @Post()
   @ApiBearerAuth()
-  async register(
+  async findOrCreate(
     @Body(new ZodValidationPipe(createMovieSchema))
     body: CreateMovieDTO,
   ) {

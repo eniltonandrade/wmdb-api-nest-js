@@ -11,7 +11,8 @@ import {
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
 import { Person } from '@prisma/client'
 import { ZodValidationPipe } from 'nestjs-zod'
-import { ApiListResponseDto } from 'src/types/api-responses'
+
+import { ApiListResponseDto } from '@/types/api-responses'
 
 import {
   AddPersonToMovieDto,

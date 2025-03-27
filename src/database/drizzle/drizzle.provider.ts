@@ -1,7 +1,8 @@
 import { drizzle } from 'drizzle-orm/mysql2'
 import * as mysql from 'mysql2/promise'
-import { EnvModule } from 'src/env/env.module'
-import { EnvService } from 'src/env/env.service'
+
+import { EnvModule } from '@/env/env.module'
+import { EnvService } from '@/env/env.service'
 
 import * as schema from './schema'
 export const DrizzleAsyncProvider = 'drizzleProvider'

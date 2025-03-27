@@ -1,8 +1,9 @@
 import { Body, Controller, Get, Put } from '@nestjs/common'
 import { ApiBearerAuth } from '@nestjs/swagger'
-import { CurrentUser } from 'src/modules/auth/current-user.decorator'
-import { UserPayload } from 'src/modules/auth/jwt.strategy'
-import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe'
+
+import { CurrentUser } from '@/modules/auth/current-user.decorator'
+import { UserPayload } from '@/modules/auth/jwt.strategy'
+import { ZodValidationPipe } from '@/pipes/zod-validation.pipe'
 
 import { updateUserBodySchema, UpdateUserDto } from './dto/update-user.dto'
 import { UsersService } from './users.service'

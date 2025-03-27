@@ -71,21 +71,17 @@ model Account {
 }
 
 model Movie {
-  id                   String   @id @default(uuid())
-  title                String
-  originalTitle        String   @map("original_title")
-  posterPath           String?  @map("poster_path")
-  backdropPath         String?  @map("backdrop_path")
-  releaseDate          DateTime @map("release_date")
-  runtime              Int?
-  imdbId               String   @unique @map("imdb_id")
-  tmdbId               Int      @unique @map("tmdb_id")
-  imdbRating           Float?   @map("imdb_rating")
-  tmdbRating           Float?   @map("tmdb_rating")
-  metacriticRating     Float?   @map("metacritic_rating")
-  rottenTomatoesRating Float?   @map("rotten_tomatoes_rating")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(uuid())
+  title         String
+  originalTitle String   @map("original_title")
+  posterPath    String?  @map("poster_path")
+  backdropPath  String?  @map("backdrop_path")
+  releaseDate   DateTime @map("release_date")
+  runtime       Int?
+  imdbId        String   @unique @map("imdb_id")
+  tmdbId        Int      @unique @map("tmdb_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   genres        GenresOnMovies[]
   ratings       RatingsOnMovies[]

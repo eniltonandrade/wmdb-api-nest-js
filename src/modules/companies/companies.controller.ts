@@ -10,8 +10,9 @@ import {
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
 import { Company } from '@prisma/client'
-import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe'
-import { ApiListResponseDto } from 'src/types/api-responses'
+
+import { ZodValidationPipe } from '@/pipes/zod-validation.pipe'
+import { ApiListResponseDto } from '@/types/api-responses'
 
 import { CompaniesService } from './companies.service'
 import {

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
-import { EnvService } from 'src/env/env.service'
+
+import { EnvService } from '@/env/env.service'
 
 import {
   DrizzleAsyncProvider,

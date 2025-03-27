@@ -1,6 +1,7 @@
 import { Body, Controller, Post, Put, UsePipes } from '@nestjs/common'
 import { ApiBearerAuth } from '@nestjs/swagger'
-import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe'
+
+import { ZodValidationPipe } from '@/pipes/zod-validation.pipe'
 
 import { AuthService } from './auth.service'
 import { CurrentUser } from './current-user.decorator'
