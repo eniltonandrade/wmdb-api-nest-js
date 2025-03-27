@@ -1,4 +1,5 @@
 import { Body, Controller, Post, Put, UsePipes } from '@nestjs/common'
+import { ApiBearerAuth } from '@nestjs/swagger'
 import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe'
 
 import { AuthService } from './auth.service'
@@ -40,6 +41,7 @@ export class AuthController {
   }
 
   @Put('update-password')
+  @ApiBearerAuth()
   updatePassword(
     @Body(new ZodValidationPipe(updatePasswordBodySchema))
     body: UpdatePasswordDto,

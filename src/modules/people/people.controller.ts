@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common'
+import { ApiBearerAuth } from '@nestjs/swagger'
 
 import { CreatePersonDto } from './dto/create-person.dto'
 import { UpdatePersonDto } from './dto/update-person.dto'
@@ -17,6 +18,7 @@ export class PeopleController {
   constructor(private readonly peopleService: PeopleService) {}
 
   @Post()
+  @ApiBearerAuth()
   findOrCreate(@Body() body: CreatePersonDto) {
     const { gender, name, tmdb_id, profile_path } = body
     return this.peopleService.findOrCreate({
@@ -38,6 +40,7 @@ export class PeopleController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   update(@Param('id') id: string, @Body() body: UpdatePersonDto) {
     const { gender, name, tmdb_id, profile_path } = body
     return this.peopleService.update(id, {
@@ -49,6 +52,7 @@ export class PeopleController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   remove(@Param('id') id: string) {
     return this.peopleService.remove(id)
   }

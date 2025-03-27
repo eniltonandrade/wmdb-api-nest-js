@@ -1,7 +1,7 @@
-import { z } from 'zod'
+import { createZodDto } from 'nestjs-zod'
 
 import { createCompanySchema } from './create-company.dto'
 
 export const updateCompanySchema = createCompanySchema.partial()
 
-export type UpdateCompanyDto = z.infer<typeof updateCompanySchema>
+export class UpdateCompanyDto extends createZodDto(updateCompanySchema) {}

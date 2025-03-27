@@ -1,7 +1,7 @@
-import { z } from 'zod'
+import { createZodDto } from 'nestjs-zod'
 
 import { createGenreSchema } from './create-genre.dto'
 
 export const updateGenreSchema = createGenreSchema.partial()
 
-export type UpdateGenreDto = z.infer<typeof updateGenreSchema>
+export class UpdateGenreDto extends createZodDto(updateGenreSchema) {}

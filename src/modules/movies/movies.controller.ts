@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common'
+import { ApiBearerAuth } from '@nestjs/swagger'
 import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe'
 
 import { CreateMovieDTO, createMovieSchema } from './dto/create-movie-dto'
@@ -10,6 +11,7 @@ export class MoviesController {
   constructor(private readonly moviesService: MoviesService) {}
 
   @Post()
+  @ApiBearerAuth()
   async register(
     @Body(new ZodValidationPipe(createMovieSchema))
     body: CreateMovieDTO,
@@ -58,6 +60,7 @@ export class MoviesController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   async update(
     @Param('tmdb_id') tmdbId: string,
     @Body(new ZodValidationPipe(updateMovieSchema))

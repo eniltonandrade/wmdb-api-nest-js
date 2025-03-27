@@ -1,3 +1,4 @@
+import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
 export const authenticateWithPasswordBodySchema = z.object({
@@ -5,6 +6,6 @@ export const authenticateWithPasswordBodySchema = z.object({
   password: z.string().min(8),
 })
 
-export type AuthenticateWithPasswordDto = z.infer<
-  typeof authenticateWithPasswordBodySchema
->
+export class AuthenticateWithPasswordDto extends createZodDto(
+  authenticateWithPasswordBodySchema,
+) {}

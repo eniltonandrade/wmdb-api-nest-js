@@ -38,6 +38,9 @@ dependencies:
   mysql2:
     specifier: ^3.13.0
     version: 3.14.0
+  nestjs-zod:
+    specifier: ^4.3.1
+    version: 4.3.1(@nestjs/common@11.0.12)(@nestjs/core@11.0.12)(@nestjs/swagger@11.1.0)(zod@3.24.2)
   passport:
     specifier: ^0.7.0
     version: 0.7.0
@@ -1757,6 +1760,27 @@ packages:
       '@napi-rs/nice-win32-x64-msvc': 1.0.1
     dev: true
     optional: true
+
+  /@nest-zod/z@2.0.0(@nestjs/common@11.0.12)(@nestjs/core@11.0.12)(@nestjs/swagger@11.1.0)(zod@3.24.2):
+    resolution: {integrity: sha512-OqmJUZlpcx9ECzPYSIjaR/q/xLKrm9FkV+0FIWLEb9MVc9YeP21GmnQJBxE1dPRlLJ1kybNFBlt4D/PB8YAPkA==}
+    peerDependencies:
+      '@nestjs/common': ^10.0.0 || ^11.0.0
+      '@nestjs/core': ^10.0.0 || ^11.0.0
+      '@nestjs/swagger': ^7.4.2 || ^8.0.0 || ^11.0.0
+      zod: '>= 3.14.3'
+    peerDependenciesMeta:
+      '@nestjs/common':
+        optional: true
+      '@nestjs/core':
+        optional: true
+      '@nestjs/swagger':
+        optional: true
+    dependencies:
+      '@nestjs/common': 11.0.12(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core': 11.0.12(@nestjs/common@11.0.12)(@nestjs/platform-express@11.0.12)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/swagger': 11.1.0(@nestjs/common@11.0.12)(@nestjs/core@11.0.12)(reflect-metadata@0.2.2)
+      zod: 3.24.2
+    dev: false
 
   /@nestjs/cli@11.0.5(@swc/cli@0.6.0)(@swc/core@1.11.13)(@types/node@22.13.13)(esbuild@0.19.12):
     resolution: {integrity: sha512-ab/d8Ple+dMSQ4pC7RSNjhntpT8gFQQE8y/F/ilaplp7zPGpuxbayRtYbsA/wc1UkJHORDckrqFc8Jh8mrTq2A==}
@@ -4011,7 +4035,6 @@ packages:
   /deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
     engines: {node: '>=0.10.0'}
-    dev: true
 
   /defaults@1.0.4:
     resolution: {integrity: sha512-eFuaLoy/Rxalv2kr+lqMlUnrDWV+3j4pljOIJgLIhI058IQfWJ7vXhyEIHu+HtC738klGALYxOKDO0bQP3tg8A==}
@@ -6908,6 +6931,29 @@ packages:
   /neo-async@2.6.2:
     resolution: {integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==}
     dev: true
+
+  /nestjs-zod@4.3.1(@nestjs/common@11.0.12)(@nestjs/core@11.0.12)(@nestjs/swagger@11.1.0)(zod@3.24.2):
+    resolution: {integrity: sha512-gl10NOf/AhWt4HLcnMI1J0WUlBCKyteJBftD6SwNyX71/vzAorr5MJQWiDJoPPkou9QL2CRHHBtyjr55o7++Xw==}
+    peerDependencies:
+      '@nestjs/common': ^10.0.0 || ^11.0.0
+      '@nestjs/core': ^10.0.0 || ^11.0.0
+      '@nestjs/swagger': ^7.4.2 || ^8.0.0 || ^11.0.0
+      zod: '>= 3.14.3'
+    peerDependenciesMeta:
+      '@nestjs/common':
+        optional: true
+      '@nestjs/core':
+        optional: true
+      '@nestjs/swagger':
+        optional: true
+    dependencies:
+      '@nest-zod/z': 2.0.0(@nestjs/common@11.0.12)(@nestjs/core@11.0.12)(@nestjs/swagger@11.1.0)(zod@3.24.2)
+      '@nestjs/common': 11.0.12(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core': 11.0.12(@nestjs/common@11.0.12)(@nestjs/platform-express@11.0.12)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/swagger': 11.1.0(@nestjs/common@11.0.12)(@nestjs/core@11.0.12)(reflect-metadata@0.2.2)
+      deepmerge: 4.3.1
+      zod: 3.24.2
+    dev: false
 
   /node-abort-controller@3.1.1:
     resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}

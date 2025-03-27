@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common'
+import { ApiBearerAuth } from '@nestjs/swagger'
 
 import { CreateGenreDto } from './dto/create-genre.dto'
 import { UpdateGenreDto } from './dto/update-genre.dto'
@@ -17,6 +18,7 @@ export class GenresController {
   constructor(private readonly genresService: GenresService) {}
 
   @Post()
+  @ApiBearerAuth()
   async findOrCreate(@Body() body: CreateGenreDto) {
     const { name, tmdb_id } = body
     const genre = await this.genresService.findOrCreate({
@@ -43,6 +45,7 @@ export class GenresController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   update(@Param('id') id: string, @Body() body: UpdateGenreDto) {
     const { name, tmdb_id } = body
     return this.genresService.update(id, {
@@ -52,6 +55,7 @@ export class GenresController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   remove(@Param('id') id: string) {
     return this.genresService.remove(id)
   }

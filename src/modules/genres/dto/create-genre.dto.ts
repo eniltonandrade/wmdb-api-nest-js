@@ -1,3 +1,4 @@
+import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
 export const createGenreSchema = z.object({
@@ -5,4 +6,4 @@ export const createGenreSchema = z.object({
   tmdb_id: z.number(),
 })
 
-export type CreateGenreDto = z.infer<typeof createGenreSchema>
+export class CreateGenreDto extends createZodDto(createGenreSchema) {}

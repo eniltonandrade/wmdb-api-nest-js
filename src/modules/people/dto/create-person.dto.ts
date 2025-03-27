@@ -1,3 +1,4 @@
+import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
 export const personSchema = z.object({
@@ -7,4 +8,4 @@ export const personSchema = z.object({
   tmdb_id: z.number(),
 })
 
-export type CreatePersonDto = z.infer<typeof personSchema>
+export class CreatePersonDto extends createZodDto(personSchema) {}

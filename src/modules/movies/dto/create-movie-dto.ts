@@ -1,3 +1,4 @@
+import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
 export const createMovieSchema = z.object({
@@ -15,4 +16,4 @@ export const createMovieSchema = z.object({
   rotten_tomatoes_rating: z.coerce.number().nullable().optional(),
 })
 
-export type CreateMovieDTO = z.infer<typeof createMovieSchema>
+export class CreateMovieDTO extends createZodDto(createMovieSchema) {}

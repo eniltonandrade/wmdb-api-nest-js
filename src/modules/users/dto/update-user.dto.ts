@@ -1,3 +1,4 @@
+import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
 export const updateUserBodySchema = z.object({
@@ -7,4 +8,4 @@ export const updateUserBodySchema = z.object({
   username: z.string().nullable(),
 })
 
-export type UpdateUserDto = z.infer<typeof updateUserBodySchema>
+export class UpdateUserDto extends createZodDto(updateUserBodySchema) {}

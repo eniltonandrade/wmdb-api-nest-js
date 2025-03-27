@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Put } from '@nestjs/common'
+import { ApiBearerAuth } from '@nestjs/swagger'
 import { CurrentUser } from 'src/modules/auth/current-user.decorator'
 import { UserPayload } from 'src/modules/auth/jwt.strategy'
 import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe'
@@ -10,12 +11,14 @@ import { UsersService } from './users.service'
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
+  @ApiBearerAuth()
   @Get()
   get(@CurrentUser() user: UserPayload) {
     return this.userService.get(user.sub)
   }
 
   @Put()
+  @ApiBearerAuth()
   update(
     @Body(new ZodValidationPipe(updateUserBodySchema))
     body: UpdateUserDto,

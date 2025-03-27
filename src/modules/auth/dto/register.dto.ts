@@ -1,3 +1,4 @@
+import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
 export const registerBodySchema = z.object({
@@ -6,4 +7,4 @@ export const registerBodySchema = z.object({
   password: z.string(),
 })
 
-export type RegisterDto = z.infer<typeof registerBodySchema>
+export class RegisterDto extends createZodDto(registerBodySchema) {}
