@@ -6,12 +6,18 @@ import {
   Param,
   Patch,
   Post,
+  UsePipes,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
 import { Person } from '@prisma/client'
+import { ZodValidationPipe } from 'nestjs-zod'
 import { ApiListResponseDto } from 'src/types/api-responses'
 
 import { Public } from '../auth/public'
+import {
+  AddGenreToMovieDto,
+  addGenreToMovieSchema,
+} from './dto/add-to-movie.dto'
 import { CreateGenreDto } from './dto/create-genre.dto'
 import { UpdateGenreDto } from './dto/update-genre.dto'
 import { GenresService } from './genres.service'
@@ -60,5 +66,22 @@ export class GenresController {
   @ApiBearerAuth()
   remove(@Param('id') id: string) {
     return this.genresService.remove(id)
+  }
+
+  @Post('/add-to-movie/:id')
+  @ApiBearerAuth()
+  @UsePipes(new ZodValidationPipe(addGenreToMovieSchema))
+  async addGenreToMovie(
+    @Param('id') movieId: string,
+    @Body() body: AddGenreToMovieDto,
+  ) {
+    const { genre } = body
+    return await this.genresService.addGenreToMovie(
+      {
+        name: genre.name,
+        tmdbId: genre.tmdb_id,
+      },
+      movieId,
+    )
   }
 }

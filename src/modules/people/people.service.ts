@@ -69,4 +69,36 @@ export class PeopleService {
       },
     })
   }
+
+  async addPersonToMovie(
+    person: Prisma.PersonCreateInput,
+    data: Prisma.PersonOnMoviesUncheckedCreateWithoutPersonInput,
+  ): Promise<void> {
+    await this.prisma.person.upsert({
+      where: {
+        tmdbId: person.tmdbId,
+      },
+      update: {
+        name: person.name,
+        profilePath: person.profilePath,
+        gender: person.gender,
+        movies: {
+          create: {
+            ...data,
+          },
+        },
+      },
+      create: {
+        name: person.name,
+        profilePath: person.profilePath,
+        gender: person.gender,
+        tmdbId: person.tmdbId,
+        movies: {
+          create: {
+            ...data,
+          },
+        },
+      },
+    })
+  }
 }

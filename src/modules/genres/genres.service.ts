@@ -76,4 +76,32 @@ export class GenresService {
       },
     })
   }
+
+  async addGenreToMovie(
+    genre: Prisma.GenreCreateInput,
+    movieId: string,
+  ): Promise<void> {
+    await this.prisma.genre.upsert({
+      where: {
+        tmdbId: genre.tmdbId,
+      },
+      update: {
+        name: genre.name,
+        movies: {
+          create: {
+            movieId,
+          },
+        },
+      },
+      create: {
+        name: genre.name,
+        tmdbId: genre.tmdbId,
+        movies: {
+          create: {
+            movieId,
+          },
+        },
+      },
+    })
+  }
 }

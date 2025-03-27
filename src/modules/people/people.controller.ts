@@ -6,11 +6,17 @@ import {
   Param,
   Patch,
   Post,
+  UsePipes,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
 import { Person } from '@prisma/client'
+import { ZodValidationPipe } from 'nestjs-zod'
 import { ApiListResponseDto } from 'src/types/api-responses'
 
+import {
+  AddPersonToMovieDto,
+  addPersonToMovieSchema,
+} from './dto/add-to-movie.dto'
 import { CreatePersonDto } from './dto/create-person.dto'
 import { UpdatePersonDto } from './dto/update-person.dto'
 import { PeopleService } from './people.service'
@@ -58,5 +64,29 @@ export class PeopleController {
   @ApiBearerAuth()
   remove(@Param('id') id: string) {
     return this.peopleService.remove(id)
+  }
+
+  @Post('/add-to-movie/:id')
+  @ApiBearerAuth()
+  @UsePipes(new ZodValidationPipe(addPersonToMovieSchema))
+  async addGenreToMovie(
+    @Param('id') movieId: string,
+    @Body() body: AddPersonToMovieDto,
+  ) {
+    const { data, person } = body
+    return await this.peopleService.addPersonToMovie(
+      {
+        name: person.name,
+        tmdbId: person.tmdb_id,
+        gender: person.gender,
+        profilePath: person.profile_path,
+      },
+      {
+        movieId,
+        role: data.role,
+        character: data.character,
+        order: data.order,
+      },
+    )
   }
 }

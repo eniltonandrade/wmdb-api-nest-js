@@ -6,14 +6,20 @@ import {
   Param,
   Patch,
   Post,
+  UsePipes,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
 import { Company } from '@prisma/client'
+import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe'
 import { ApiListResponseDto } from 'src/types/api-responses'
 
 import { CompaniesService } from './companies.service'
-import { CreateCompanyDto } from './dto/create-company.dto'
-import { UpdateCompanyDto } from './dto/update-company.dto'
+import {
+  AddCompanyToMovieDto,
+  addCompanyToMovieSchema,
+} from './dto/add-to-movie.dtos'
+import { CreateCompanyDto, createCompanySchema } from './dto/create-company.dto'
+import { UpdateCompanyDto, updateCompanySchema } from './dto/update-company.dto'
 
 @Controller('companies')
 export class CompaniesController {
@@ -21,6 +27,7 @@ export class CompaniesController {
 
   @Post()
   @ApiBearerAuth()
+  @UsePipes(new ZodValidationPipe(createCompanySchema))
   async findOrCreate(@Body() body: CreateCompanyDto) {
     const { name, tmdb_id, logo_path } = body
     const company = await this.companiesService.findOrCreate({
@@ -41,15 +48,18 @@ export class CompaniesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.companiesService.findOne(id)
+  async findOne(@Param('id') id: string) {
+    return await this.companiesService.findOne(id)
   }
 
   @Patch(':id')
   @ApiBearerAuth()
-  update(@Param('id') id: string, @Body() body: UpdateCompanyDto) {
+  async update(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateCompanySchema)) body: UpdateCompanyDto,
+  ) {
     const { name, tmdb_id, logo_path } = body
-    return this.companiesService.update(id, {
+    return await this.companiesService.update(id, {
       name,
       tmdbId: tmdb_id,
       logoPath: logo_path,
@@ -58,7 +68,25 @@ export class CompaniesController {
 
   @Delete(':id')
   @ApiBearerAuth()
-  remove(@Param('id') id: string) {
-    return this.companiesService.remove(id)
+  async remove(@Param('id') id: string) {
+    return await this.companiesService.remove(id)
+  }
+
+  @Post('/add-to-movie/:id')
+  @ApiBearerAuth()
+  @UsePipes(new ZodValidationPipe(addCompanyToMovieSchema))
+  async addCompanyToMovie(
+    @Param('id') movieId: string,
+    @Body() body: AddCompanyToMovieDto,
+  ) {
+    const { company } = body
+    return await this.companiesService.addCompanyToMovie(
+      {
+        name: company.name,
+        tmdbId: company.tmdb_id,
+        logoPath: company.logo_path,
+      },
+      movieId,
+    )
   }
 }

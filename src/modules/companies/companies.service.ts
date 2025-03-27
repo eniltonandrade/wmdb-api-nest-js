@@ -76,4 +76,34 @@ export class CompaniesService {
       },
     })
   }
+
+  async addCompanyToMovie(
+    company: Prisma.CompanyCreateInput,
+    movieId: string,
+  ): Promise<void> {
+    await this.prisma.company.upsert({
+      where: {
+        tmdbId: company.tmdbId,
+      },
+      update: {
+        name: company.name,
+        logoPath: company.logoPath,
+        movies: {
+          create: {
+            movieId,
+          },
+        },
+      },
+      create: {
+        name: company.name,
+        tmdbId: company.tmdbId,
+        logoPath: company.logoPath,
+        movies: {
+          create: {
+            movieId,
+          },
+        },
+      },
+    })
+  }
 }
