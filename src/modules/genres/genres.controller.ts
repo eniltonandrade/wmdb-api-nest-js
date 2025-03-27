@@ -17,8 +17,16 @@ export class GenresController {
   constructor(private readonly genresService: GenresService) {}
 
   @Post()
-  create(@Body() createGenreDto: CreateGenreDto) {
-    return this.genresService.create(createGenreDto)
+  async findOrCreate(@Body() body: CreateGenreDto) {
+    const { name, tmdb_id } = body
+    const genre = await this.genresService.findOrCreate({
+      name,
+      tmdbId: tmdb_id,
+    })
+
+    return {
+      result: genre,
+    }
   }
 
   @Get()
@@ -35,8 +43,12 @@ export class GenresController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateGenreDto: UpdateGenreDto) {
-    return this.genresService.update(id, updateGenreDto)
+  update(@Param('id') id: string, @Body() body: UpdateGenreDto) {
+    const { name, tmdb_id } = body
+    return this.genresService.update(id, {
+      name,
+      tmdbId: tmdb_id,
+    })
   }
 
   @Delete(':id')

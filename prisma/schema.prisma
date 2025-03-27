@@ -87,15 +87,12 @@ model Movie {
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
-  genres    GenresOnMovies[]
-  ratings   RatingsOnMovies[]
-  companies CompaniesOnMovies[]
-  crew      CrewOnMovies[]
-  cast      CastOnMovies[]
-  lists     MoviesOnLists[]
-
-  userHistories  History[]
-  PersonOnMovies PersonOnMovies[]
+  genres        GenresOnMovies[]
+  ratings       RatingsOnMovies[]
+  companies     CompaniesOnMovies[]
+  lists         MoviesOnLists[]
+  people        PersonOnMovies[]
+  userHistories History[]
 
   @@map("movies")
 }
@@ -120,16 +117,14 @@ model Company {
 }
 
 model Person {
-  id             String           @id @default(uuid())
-  name           String
-  tmdbId         Int              @unique
-  gender         Int?
-  profilePath    String?          @map("profile_path")
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
-  crew           CrewOnMovies[]
-  cast           CastOnMovies[]
-  PersonOnMovies PersonOnMovies[]
+  id          String           @id @default(uuid())
+  name        String
+  tmdbId      Int              @unique
+  gender      Int?
+  profilePath String?          @map("profile_path")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  movies      PersonOnMovies[]
 
   @@map("people")
 }
@@ -169,33 +164,6 @@ model RatingsOnMovies {
   @@id([ratingSource, movieId])
   @@unique([ratingSource, movieId])
   @@map("movie_ratings")
-}
-
-model CrewOnMovies {
-  personId String @map("person_id")
-  movieId  String @map("movie_id")
-  job      String
-
-  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
-  movie  Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
-
-  @@id([personId, movieId, job])
-  @@unique([personId, movieId, job])
-  @@map("movie_crew")
-}
-
-model CastOnMovies {
-  personId  String @map("person_id")
-  movieId   String @map("movie_id")
-  character String
-  order     Int
-
-  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
-  movie  Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
-
-  @@id([personId, movieId])
-  @@unique([personId, movieId])
-  @@map("movie_cast")
 }
 
 enum Role {

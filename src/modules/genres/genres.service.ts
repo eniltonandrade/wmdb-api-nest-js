@@ -1,36 +1,22 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common'
-import { Genre } from '@prisma/client'
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { Genre, Prisma } from '@prisma/client'
 import { PrismaService } from 'src/database/prisma/prisma.service'
-
-import { CreateGenreDto } from './dto/create-genre.dto'
-import { UpdateGenreDto } from './dto/update-genre.dto'
 
 @Injectable()
 export class GenresService {
   constructor(private prisma: PrismaService) {}
 
-  async create({ name, tmdb_id }: CreateGenreDto): Promise<Genre> {
-    const genreAlreadyExists = await this.prisma.genre.findUnique({
-      where: {
-        tmdbId: tmdb_id,
-      },
-    })
-
-    if (genreAlreadyExists) {
-      throw new ConflictException(
-        `Genre with TMDB ID ${tmdb_id} already exists`,
-      )
-    }
-
-    const genre = await this.prisma.genre.create({
-      data: {
+  async findOrCreate({
+    name,
+    tmdbId,
+  }: Prisma.GenreCreateInput): Promise<Genre> {
+    const genre = await this.prisma.genre.upsert({
+      create: {
         name,
-        tmdbId: tmdb_id,
+        tmdbId,
       },
+      update: {},
+      where: { tmdbId },
     })
 
     return genre
@@ -52,19 +38,22 @@ export class GenresService {
     return genre
   }
 
-  async update(id: string, { name, tmdb_id }: UpdateGenreDto): Promise<void> {
+  async update(
+    id: string,
+    { name, tmdbId }: Prisma.GenreUpdateInput,
+  ): Promise<void> {
     const genreExists = await this.prisma.genre.findUnique({
       where: { id },
     })
 
     if (!genreExists) {
-      throw new NotFoundException(`Genre with TMDB ID ${tmdb_id} not found`)
+      throw new NotFoundException(`Genre with TMDB ID ${tmdbId} not found`)
     }
 
     await this.prisma.genre.update({
       data: {
         name,
-        tmdbId: tmdb_id,
+        tmdbId,
       },
       where: {
         id,
