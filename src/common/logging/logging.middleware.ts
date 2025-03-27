@@ -1,4 +1,5 @@
 import { Injectable, Logger, NestMiddleware } from '@nestjs/common'
+import { format } from 'date-fns'
 import { NextFunction, Request, Response } from 'express'
 
 @Injectable()
@@ -6,7 +7,7 @@ export class LoggingMiddleware implements NestMiddleware {
   private readonly logger = new Logger('HTTP')
 
   use(req: Request, res: Response, next: NextFunction): void {
-    const { method, originalUrl, baseUrl, body, query, params } = req
+    const { method, originalUrl, body, query } = req
     const startTime = Date.now()
 
     const sanitizedBody = this.sanitizeSensitiveData(body)
@@ -19,21 +20,21 @@ export class LoggingMiddleware implements NestMiddleware {
     }
 
     this.logger.log(
-      `REQUEST|${method}|${baseUrl}${originalUrl}|${JSON.stringify(query)}|${JSON.stringify(params)}`,
+      `${format(new Date(), "d'/'MM'/'yyyy'|'HH:mm:ss")}|REQUEST|${method}|${originalUrl}|${JSON.stringify(query)}`,
     )
-    this.logger.debug(`REQUEST|${JSON.stringify(sanitizedBody)}`)
+    this.logger.debug(`${JSON.stringify(sanitizedBody)}`)
 
     res.on('finish', () => {
       const duration = Date.now() - startTime
       this.logger.log(
-        `RESPONSE|${method}|${originalUrl}|${res.statusCode}|${duration}`,
+        `${format(new Date(), "d'/'MM'/'yyyy'|'HH:mm:ss")}|RESPONSE|${method}|${originalUrl}|${res.statusCode}|${duration}`,
       )
 
       if (responseBody) {
         const sanitizedResponse = this.sanitizeSensitiveData(
           JSON.parse(responseBody),
         )
-        this.logger.debug(`RESPONSE:${JSON.stringify(sanitizedResponse)}`)
+        this.logger.debug(`${JSON.stringify(sanitizedResponse)}`)
       }
     })
 

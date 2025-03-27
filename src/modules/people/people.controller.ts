@@ -7,7 +7,9 @@ import {
   Patch,
   Post,
 } from '@nestjs/common'
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
+import { Person } from '@prisma/client'
+import { ApiListResponseDto } from 'src/types/api-responses'
 
 import { CreatePersonDto } from './dto/create-person.dto'
 import { UpdatePersonDto } from './dto/update-person.dto'
@@ -30,8 +32,9 @@ export class PeopleController {
   }
 
   @Get()
-  findAll() {
-    return this.peopleService.findAll()
+  @ApiResponse({ status: 200, type: ApiListResponseDto<Person> })
+  async findAll() {
+    return await this.peopleService.findAll()
   }
 
   @Get(':id')

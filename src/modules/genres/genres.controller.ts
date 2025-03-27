@@ -7,8 +7,11 @@ import {
   Patch,
   Post,
 } from '@nestjs/common'
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
+import { Person } from '@prisma/client'
+import { ApiListResponseDto } from 'src/types/api-responses'
 
+import { Public } from '../auth/public'
 import { CreateGenreDto } from './dto/create-genre.dto'
 import { UpdateGenreDto } from './dto/update-genre.dto'
 import { GenresService } from './genres.service'
@@ -32,11 +35,10 @@ export class GenresController {
   }
 
   @Get()
+  @Public()
+  @ApiResponse({ status: 200, type: ApiListResponseDto<Person> })
   async findAll() {
-    const results = await this.genresService.findAll()
-    return {
-      results,
-    }
+    return await this.genresService.findAll()
   }
 
   @Get(':id')

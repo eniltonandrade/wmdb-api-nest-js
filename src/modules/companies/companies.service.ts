@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { Company, Prisma } from '@prisma/client'
 import { PrismaService } from 'src/database/prisma/prisma.service'
+import { ApiListResponseDto } from 'src/types/api-responses'
 
 @Injectable()
 export class CompaniesService {
@@ -22,8 +23,15 @@ export class CompaniesService {
     return company
   }
 
-  async findAll(): Promise<Company[]> {
-    return await this.prisma.company.findMany()
+  async findAll(): Promise<ApiListResponseDto<Company>> {
+    const [results, total] = await this.prisma.$transaction([
+      this.prisma.company.findMany(),
+      this.prisma.company.count(),
+    ])
+    return {
+      total,
+      results,
+    }
   }
 
   async findOne(id: string): Promise<Company> {

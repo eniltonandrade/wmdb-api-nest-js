@@ -7,7 +7,9 @@ import {
   Patch,
   Post,
 } from '@nestjs/common'
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
+import { Company } from '@prisma/client'
+import { ApiListResponseDto } from 'src/types/api-responses'
 
 import { CompaniesService } from './companies.service'
 import { CreateCompanyDto } from './dto/create-company.dto'
@@ -33,11 +35,9 @@ export class CompaniesController {
   }
 
   @Get()
+  @ApiResponse({ status: 200, type: ApiListResponseDto<Company> })
   async findAll() {
-    const results = await this.companiesService.findAll()
-    return {
-      results,
-    }
+    return await this.companiesService.findAll()
   }
 
   @Get(':id')

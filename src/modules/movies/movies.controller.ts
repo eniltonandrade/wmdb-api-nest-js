@@ -1,7 +1,10 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common'
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
+import { Movie } from '@prisma/client'
 import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe'
+import { ApiListResponseDto } from 'src/types/api-responses'
 
+import { Public } from '../auth/public'
 import { CreateMovieDTO, createMovieSchema } from './dto/create-movie-dto'
 import { UpdateMovieDto, updateMovieSchema } from './dto/update-movie-dto'
 import { MoviesService } from './movies.service'
@@ -43,26 +46,25 @@ export class MoviesController {
 
   @Get('/:id')
   async get(@Param('id') movieId: string) {
-    const movie = await this.moviesService.get(movieId)
-
-    return {
-      result: movie,
-    }
+    return await this.moviesService.get(movieId)
   }
 
   @Get('/tmdb/:id')
-  async getByTmdbId(@Param('tmdb_id') movieId: number) {
-    const movie = await this.moviesService.getByTmdbId(movieId)
+  async getByTmdbId(@Param('id') movieId: string) {
+    return await this.moviesService.getByTmdbId(+movieId)
+  }
 
-    return {
-      result: movie,
-    }
+  @Get()
+  @Public()
+  @ApiResponse({ status: 200, type: ApiListResponseDto<Movie> })
+  async findAll(): Promise<ApiListResponseDto<Movie>> {
+    return await this.moviesService.findAll()
   }
 
   @Patch(':id')
   @ApiBearerAuth()
   async update(
-    @Param('tmdb_id') tmdbId: string,
+    @Param('id') tmdbId: string,
     @Body(new ZodValidationPipe(updateMovieSchema))
     body: UpdateMovieDto,
   ) {

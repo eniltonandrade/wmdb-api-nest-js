@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { Movie, Prisma } from '@prisma/client'
 import { PrismaService } from 'src/database/prisma/prisma.service'
+import { ApiListResponseDto } from 'src/types/api-responses'
 
 @Injectable()
 export class MoviesService {
@@ -40,7 +41,20 @@ export class MoviesService {
     return movie
   }
 
-  async create(data: Prisma.MovieCreateInput) {
+  async findAll(): Promise<ApiListResponseDto<Movie>> {
+    const [movies, count] = await this.prisma.$transaction([
+      this.prisma.movie.findMany(),
+      this.prisma.movie.count(),
+    ])
+    return {
+      total: count,
+      results: movies,
+    }
+  }
+
+  async create(
+    data: Prisma.MovieCreateInput,
+  ): Promise<{ created: boolean; id: string }> {
     const movieAlreadyExists = await this.getMovieByTmdbId(data.tmdbId)
 
     if (movieAlreadyExists) {
@@ -51,7 +65,10 @@ export class MoviesService {
     }
 
     const movie = await this.prisma.movie.create({
-      data,
+      data: {
+        ...data,
+        releaseDate: new Date(data.releaseDate),
+      },
     })
 
     return {
