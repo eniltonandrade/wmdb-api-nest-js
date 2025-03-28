@@ -82,29 +82,34 @@ export class CompaniesService {
     company: Prisma.CompanyCreateInput,
     movieId: string,
   ): Promise<void> {
-    await this.prisma.company.upsert({
+    const companyFoundOrCreated = await this.prisma.company.upsert({
       where: {
         tmdbId: company.tmdbId,
       },
-      update: {
-        name: company.name,
-        logoPath: company.logoPath,
-        movies: {
-          create: {
-            movieId,
-          },
-        },
-      },
+      update: {},
       create: {
         name: company.name,
         tmdbId: company.tmdbId,
         logoPath: company.logoPath,
-        movies: {
-          create: {
-            movieId,
-          },
+      },
+    })
+
+    const alreadyRelated = await this.prisma.companiesOnMovies.findUnique({
+      where: {
+        companyId_movieId: {
+          companyId: companyFoundOrCreated.id,
+          movieId,
         },
       },
     })
+
+    if (!alreadyRelated) {
+      await this.prisma.companiesOnMovies.create({
+        data: {
+          companyId: companyFoundOrCreated.id,
+          movieId,
+        },
+      })
+    }
   }
 }

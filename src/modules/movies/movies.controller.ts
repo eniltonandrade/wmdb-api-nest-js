@@ -6,8 +6,12 @@ import { ZodValidationPipe } from '@/pipes/zod-validation.pipe'
 import { ApiListResponseDto } from '@/types/api-responses'
 
 import { Public } from '../auth/public'
-import { CreateMovieDTO, createMovieSchema } from './dto/create-movie-dto'
-import { UpdateMovieDto, updateMovieSchema } from './dto/update-movie-dto'
+import { CreateMovieDTO, createMovieSchema } from './dto/create-movie.dto'
+import {
+  CreateMovieRelationshipsDto,
+  createMovieRelationshipsSchema,
+} from './dto/create-movie-relationships.dto'
+import { UpdateMovieDto, updateMovieSchema } from './dto/update-movie.dto'
 import { MoviesService } from './movies.service'
 
 @Controller('movies')
@@ -90,5 +94,15 @@ export class MoviesController {
       posterPath: poster_path,
       runtime,
     })
+  }
+
+  @Post(':id/create-relations')
+  @ApiBearerAuth()
+  async createRelationShips(
+    @Param('id') movieId: string,
+    @Body(new ZodValidationPipe(createMovieRelationshipsSchema))
+    body: CreateMovieRelationshipsDto,
+  ) {
+    return await this.moviesService.createMovieRelationships(movieId, body)
   }
 }

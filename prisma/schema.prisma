@@ -87,7 +87,7 @@ model Movie {
   ratings       RatingsOnMovies[]
   companies     CompaniesOnMovies[]
   lists         MoviesOnLists[]
-  people        PersonOnMovies[]
+  credits       PersonOnMovies[]
   userHistories History[]
 
   @@map("movies")

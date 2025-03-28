@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { Movie } from '@prisma/client'
 
-import { CreateMovieDTO } from './dto/create-movie-dto'
-import { UpdateMovieDto } from './dto/update-movie-dto'
+import { CreateMovieDTO } from './dto/create-movie.dto'
+import { UpdateMovieDto } from './dto/update-movie.dto'
 import { MoviesController } from './movies.controller'
 import { MoviesService } from './movies.service'
 

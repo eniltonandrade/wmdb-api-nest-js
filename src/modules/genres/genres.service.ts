@@ -82,27 +82,33 @@ export class GenresService {
     genre: Prisma.GenreCreateInput,
     movieId: string,
   ): Promise<void> {
-    await this.prisma.genre.upsert({
+    const genreFoundOrCreated = await this.prisma.genre.upsert({
       where: {
         tmdbId: genre.tmdbId,
       },
-      update: {
-        name: genre.name,
-        movies: {
-          create: {
-            movieId,
-          },
-        },
-      },
+      update: {},
       create: {
         name: genre.name,
         tmdbId: genre.tmdbId,
-        movies: {
-          create: {
-            movieId,
-          },
+      },
+    })
+
+    const alreadyRelated = await this.prisma.genresOnMovies.findUnique({
+      where: {
+        genreId_movieId: {
+          genreId: genreFoundOrCreated.id,
+          movieId,
         },
       },
     })
+
+    if (!alreadyRelated) {
+      await this.prisma.genresOnMovies.create({
+        data: {
+          genreId: genreFoundOrCreated.id,
+          movieId,
+        },
+      })
+    }
   }
 }

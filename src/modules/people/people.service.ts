@@ -74,32 +74,40 @@ export class PeopleService {
   async addPersonToMovie(
     person: Prisma.PersonCreateInput,
     data: Prisma.PersonOnMoviesUncheckedCreateWithoutPersonInput,
-  ): Promise<void> {
-    await this.prisma.person.upsert({
+  ): Promise<void | null> {
+    const personFoundOrCreated = await this.prisma.person.upsert({
       where: {
         tmdbId: person.tmdbId,
       },
-      update: {
-        name: person.name,
-        profilePath: person.profilePath,
-        gender: person.gender,
-        movies: {
-          create: {
-            ...data,
-          },
-        },
-      },
+      update: {},
       create: {
         name: person.name,
         profilePath: person.profilePath,
         gender: person.gender,
         tmdbId: person.tmdbId,
-        movies: {
-          create: {
-            ...data,
-          },
+      },
+    })
+
+    const sameRoleExists = await this.prisma.personOnMovies.findUnique({
+      where: {
+        personId_movieId_role: {
+          personId: personFoundOrCreated.id,
+          movieId: data.movieId,
+          role: data.role,
         },
       },
     })
+
+    if (!sameRoleExists) {
+      await this.prisma.personOnMovies.create({
+        data: {
+          role: data.role,
+          character: data.character,
+          order: data.order,
+          movieId: data.movieId,
+          personId: personFoundOrCreated.id,
+        },
+      })
+    }
   }
 }
