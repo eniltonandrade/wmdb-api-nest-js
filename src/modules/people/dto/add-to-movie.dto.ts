@@ -1,10 +1,10 @@
 import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
-import { CreatePersonSchema } from './create-person.dto'
+import { createPersonSchema } from './create-person.dto'
 
 export const addPersonToMovieSchema = z.object({
-  person: CreatePersonSchema,
+  person: createPersonSchema,
   data: z.object({
     role: z.enum(['ACTOR', 'ACTRESS', 'DIRECTOR', 'WRITER', 'PRODUCER']),
     character: z.string().optional(),

@@ -1,7 +1,7 @@
 import { createZodDto } from 'nestjs-zod'
 
-import { personSchema } from './create-person.dto'
+import { createPersonSchema } from './create-person.dto'
 
-export const updatePersonSchema = personSchema.partial()
+export const updatePersonSchema = createPersonSchema.partial()
 
-export class UpdatePersonDto extends createZodDto(updatePersonSchema) {}
+export class UpdatePersonDto extends createZodDto(createPersonSchema) {}
