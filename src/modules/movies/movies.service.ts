@@ -8,6 +8,7 @@ import { CompaniesService } from '../companies/companies.service'
 import { GenresService } from '../genres/genres.service'
 import { PeopleService } from '../people/people.service'
 import { CreateMovieRelationshipsDto } from './dto/create-movie-relationships.dto'
+import { MovieRatingsDto } from './dto/update-movie-ratings.dto'
 
 @Injectable()
 export class MoviesService {
@@ -111,6 +112,7 @@ export class MoviesService {
       casts: { cast, crew },
       production_companies,
       genres,
+      ratings,
     } = data
 
     const groupedPromises: Promise<void | null>[] = []
@@ -178,6 +180,46 @@ export class MoviesService {
       )
     })
 
+    ratings.forEach(async (item) => {
+      await this.prisma.ratingsOnMovies.upsert({
+        create: {
+          ratingSource: item.source,
+          value: item.value,
+          movieId,
+        },
+        update: {},
+        where: {
+          ratingSource_movieId: {
+            movieId,
+            ratingSource: item.source,
+          },
+        },
+      })
+    })
+
     await Promise.all(groupedPromises)
+  }
+
+  async updateMovieRating(movieId: string, data: MovieRatingsDto[]) {
+    data.forEach(async (item) => {
+      await this.prisma.ratingsOnMovies.upsert({
+        create: {
+          ratingSource: item.source,
+          value: item.value,
+          movieId,
+        },
+        update: {
+          ratingSource: item.source,
+          value: item.value,
+          movieId,
+        },
+        where: {
+          ratingSource_movieId: {
+            movieId,
+            ratingSource: item.source,
+          },
+        },
+      })
+    })
   }
 }

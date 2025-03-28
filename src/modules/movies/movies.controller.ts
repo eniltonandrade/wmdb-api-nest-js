@@ -12,6 +12,10 @@ import {
   createMovieRelationshipsSchema,
 } from './dto/create-movie-relationships.dto'
 import { UpdateMovieDto, updateMovieSchema } from './dto/update-movie.dto'
+import {
+  UpdateMovieRatingsDto,
+  updateMovieRatingsSchema,
+} from './dto/update-movie-ratings.dto'
 import { MoviesService } from './movies.service'
 
 @Controller('movies')
@@ -104,5 +108,16 @@ export class MoviesController {
     body: CreateMovieRelationshipsDto,
   ) {
     return await this.moviesService.createMovieRelationships(movieId, body)
+  }
+
+  @Patch(':id/ratings')
+  @ApiBearerAuth()
+  async updateMovieRatings(
+    @Param('id') movieId: string,
+    @Body(new ZodValidationPipe(updateMovieRatingsSchema))
+    body: UpdateMovieRatingsDto,
+  ) {
+    const { ratings } = body
+    return await this.moviesService.updateMovieRating(movieId, ratings)
   }
 }

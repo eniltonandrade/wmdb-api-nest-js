@@ -37,6 +37,12 @@ export const createMovieRelationshipsSchema = z.object({
       id: z.number(),
     }),
   ),
+  ratings: z.array(
+    z.object({
+      source: z.enum(['IMDB', 'TMDB', 'ROTTEN_TOMATOES', 'METACRITIC']),
+      value: z.number(),
+    }),
+  ),
 })
 
 export class CreateMovieRelationshipsDto extends createZodDto(
