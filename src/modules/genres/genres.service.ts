@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { Genre, Prisma } from '@prisma/client'
+
 import { PrismaService } from '@/database/prisma/prisma.service'
 import { ApiListResponseDto } from '@/types/api-responses'
 
