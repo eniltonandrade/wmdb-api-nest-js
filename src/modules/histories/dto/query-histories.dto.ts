@@ -28,6 +28,7 @@ export const queryStringSchema = z
     company_id: z.string().uuid().optional(),
     release_year: z.string().optional(),
     watched_year: z.string().optional(),
+    query: z.string().optional(),
     sort_by: SortByOptionsSchema,
   })
   .strict()

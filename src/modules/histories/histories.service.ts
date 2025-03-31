@@ -74,7 +74,10 @@ export class HistoriesService {
         person_id,
         release_year,
         watched_year,
+        query,
       } = params
+
+      const [column, direction] = sort_by.split('.')
 
       const PAGE_SIZE = 20
       const skip = (page - 1) * PAGE_SIZE
@@ -82,12 +85,11 @@ export class HistoriesService {
 
       let orderBy: KSLOrderBy = 'histories.date'
 
-      let sortOrder: OrderByDirectionExpression = 'desc'
+      const sortOrder: OrderByDirectionExpression =
+        direction as OrderByDirectionExpression
 
       let selectedRatingSource: RatingSource = 'TMDB'
 
-      const [column, direction] = sort_by.split('.')
-      sortOrder = direction as OrderByDirectionExpression
       switch (column) {
         case 'rating_imdb':
         case 'rating_tmdb':
@@ -110,74 +112,71 @@ export class HistoriesService {
         .selectFrom('histories')
         .innerJoin('movies', 'movies.id', 'histories.movie_id')
         .innerJoin('movie_ratings', 'movie_ratings.movie_id', 'movies.id')
-        .selectAll()
         .where('user_id', '=', userId)
+        .$if(!!query, (qb) => qb.where('movies.title', 'like', `%${query}%`))
+        .$if(!!person_id, (qb) =>
+          qb
+            .innerJoin(
+              'movie_person',
+              'movie_person.movie_id',
+              'histories.movie_id',
+            )
+            .where('movie_person.person_id', '=', person_id!),
+        )
+        .$if(!!genre_id, (qb) =>
+          qb
+            .innerJoin(
+              'movie_genres',
+              'movie_genres.movie_id',
+              'histories.movie_id',
+            )
+            .where('movie_genres.genre_id', '=', genre_id!),
+        )
+        .$if(!!company_id, (qb) =>
+          qb
+            .innerJoin(
+              'movie_companies',
+              'movie_companies.movie_id',
+              'histories.movie_id',
+            )
+            .where('movie_companies.company_id', '=', company_id!),
+        )
+        .$if(!!watched_year, (qb) =>
+          qb
+            .where('histories.date', '>=', new Date(`${watched_year}-01-01`))
+            .where(
+              'histories.date',
+              '<=',
+              new Date(`${Number(watched_year) + 1}-01-01`),
+            ),
+        )
+        .$if(!!release_year, (qb) =>
+          qb
+            .where(
+              'movies.release_date',
+              '>=',
+              new Date(`${release_year}-01-01`),
+            )
+            .where(
+              'movies.release_date',
+              '<=',
+              new Date(`${Number(release_year) + 1}-01-01`),
+            ),
+        )
         .where('movie_ratings.rating_source', '=', selectedRatingSource)
+        .selectAll(['histories', 'movies'])
         .orderBy(orderBy, sortOrder)
         .limit(take)
         .offset(skip)
+        .distinct()
 
-      if (genre_id) {
-        return await dbQuery
-          .innerJoin(
-            'movie_genres',
-            'movie_genres.movie_id',
-            'histories.movie_id',
-          )
-          .where('movie_genres.genre_id', '=', genre_id)
-          .execute()
-      }
+      const totalCount = await dbQuery
+        .select(({ fn }) => fn.count<number>('histories.id').as('total'))
+        .executeTakeFirst()
 
-      if (person_id) {
-        return await dbQuery
-          .innerJoin(
-            'movie_person',
-            'movie_person.movie_id',
-            'histories.movie_id',
-          )
-          .where('movie_person.person_id', '=', person_id)
-          .select('movie_person.character')
-          .execute()
-      }
+      const results = await dbQuery.execute()
 
-      if (company_id) {
-        return await dbQuery
-          .innerJoin(
-            'movie_companies',
-            'movie_companies.movie_id',
-            'histories.movie_id',
-          )
-          .where('movie_companies.company_id', '=', company_id)
-          .execute()
-      }
-
-      if (watched_year) {
-        return await dbQuery
-          .where(
-            'histories.date',
-            '>=',
-            new Date(`${watched_year}-01-01T00:00:00Z`),
-          )
-          .where(
-            'histories.date',
-            '<=',
-            new Date(`${Number(watched_year) + 1}-01-01T00:00:00Z`),
-          )
-          .execute()
-      }
-
-      if (release_year) {
-        return await dbQuery
-          .where('movies.release_date', '>=', new Date(`${release_year}-01-01`))
-          .where(
-            'movies.release_date',
-            '<=',
-            new Date(`${Number(release_year) + 1}-01-01`),
-          )
-          .execute()
-      }
-
-      return await dbQuery.execute()
+      return { total: totalCount?.total, results }
     } catch (error) {
       return []
     }
