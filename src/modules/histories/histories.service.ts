@@ -1,13 +1,18 @@
-import { ConflictException, Injectable, Logger } from '@nestjs/common'
+import { ConflictException, Injectable } from '@nestjs/common'
 import { Prisma, RatingSource } from '@prisma/client'
 import { Kysely, OrderByDirectionExpression } from 'kysely'
 import { InjectKysely } from 'nestjs-kysely'
 import { DB } from 'prisma/generated/types'
 
-import { MOVIE_FILTER_COLUMNS } from '@/common/constants/app.constants'
+import {
+  MOVIE_FILTER_COLUMNS,
+  PAGE_SIZE,
+} from '@/common/constants/app.constants'
 import { PrismaService } from '@/database/prisma/prisma.service'
+import { ApiListResponseDto } from '@/types/api-responses'
 
 import { queryStringDto } from './dto/query-histories.dto'
+import { UserMovieHistoryDto } from './dto/user-movie-history.dto'
 
 type PossibleOrderBy<
   Tables extends Record<string, unknown>,
@@ -26,8 +31,6 @@ export class HistoriesService {
     private prisma: PrismaService,
     @InjectKysely() private readonly kysely: Kysely<DB>,
   ) {}
-
-  private readonly logger = new Logger(HistoriesService.name)
 
   async create(data: Prisma.HistoryUncheckedCreateInput) {
     const alreadyExists = await this.prisma.history.findUnique({
@@ -64,7 +67,10 @@ export class HistoriesService {
     return `This action removes a #${userId} history`
   }
 
-  async fetchUserHistory(userId: string, params: queryStringDto) {
+  async fetchUserHistory(
+    userId: string,
+    params: queryStringDto,
+  ): Promise<ApiListResponseDto<UserMovieHistoryDto>> {
     try {
       const {
         page,
@@ -79,7 +85,6 @@ export class HistoriesService {
 
       const [column, direction] = sort_by.split('.')
 
-      const PAGE_SIZE = 20
       const skip = (page - 1) * PAGE_SIZE
       const take = PAGE_SIZE
 
@@ -164,7 +169,7 @@ export class HistoriesService {
             ),
         )
         .where('movie_ratings.rating_source', '=', selectedRatingSource)
-        .selectAll(['histories', 'movies'])
+        .selectAll(['histories', 'movies', 'movie_ratings'])
         .orderBy(orderBy, sortOrder)
         .limit(take)
         .offset(skip)
@@ -176,9 +181,31 @@ export class HistoriesService {
 
       const results = await dbQuery.execute()
 
-      return { total: totalCount?.total, results }
+      const mappedResults: UserMovieHistoryDto[] = results.map((record) => ({
+        id: record.id,
+        date: record.date,
+        rating: record.rating,
+        movie: {
+          imdb_id: record.imdb_id,
+          original_title: record.original_title,
+          poster_path: record.poster_path,
+          release_date: record.release_date.toISOString(),
+          backdrop_path: record.backdrop_path,
+          title: record.title,
+          tmdb_id: record.tmdb_id,
+          ratings: {
+            source: record.rating_source,
+            value: record.value,
+          },
+        },
+      }))
+
+      return {
+        total: totalCount?.total || 0,
+        results: mappedResults,
+      }
     } catch (error) {
-      return []
+      return { total: 0, results: [] }
     }
   }
 }
