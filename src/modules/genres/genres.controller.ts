@@ -11,6 +11,7 @@ import {
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
 import { Person } from '@prisma/client'
 import { ZodValidationPipe } from 'nestjs-zod'
+
 import { ApiListResponseDto } from '@/types/api-responses'
 
 import { Public } from '../auth/public'

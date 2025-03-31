@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module'
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard'
 import { CompaniesModule } from './modules/companies/companies.module'
 import { GenresModule } from './modules/genres/genres.module'
+import { HistoriesModule } from './modules/histories/histories.module'
 import { MoviesModule } from './modules/movies/movies.module'
 import { PeopleModule } from './modules/people/people.module'
 import { UsersModule } from './modules/users/users.module'
@@ -28,6 +29,7 @@ import { UsersModule } from './modules/users/users.module'
     GenresModule,
     PeopleModule,
     CompaniesModule,
+    HistoriesModule,
   ],
   controllers: [],
   providers: [
