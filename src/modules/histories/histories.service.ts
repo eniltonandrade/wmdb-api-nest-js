@@ -1,14 +1,32 @@
 import { ConflictException, Injectable, Logger } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
+import { Prisma, RatingSource } from '@prisma/client'
+import { Kysely, OrderByDirectionExpression } from 'kysely'
+import { InjectKysely } from 'nestjs-kysely'
+import { DB } from 'prisma/generated/types'
 
 import { MOVIE_FILTER_COLUMNS } from '@/common/constants/app.constants'
 import { PrismaService } from '@/database/prisma/prisma.service'
 
 import { queryStringDto } from './dto/query-histories.dto'
 
+type PossibleOrderBy<
+  Tables extends Record<string, unknown>,
+  Table extends keyof Tables,
+> =
+  | `${Table & string}.${Extract<keyof Tables[Table], string>}` // Dot notation for joins
+  | Extract<keyof Tables[Table], string> // Single table columns
+
+type KSLOrderBy =
+  | PossibleOrderBy<DB, 'movie_ratings'>
+  | PossibleOrderBy<DB, 'movies'>
+  | PossibleOrderBy<DB, 'histories'>
 @Injectable()
 export class HistoriesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @InjectKysely() private readonly kysely: Kysely<DB>,
+  ) {}
+
   private readonly logger = new Logger(HistoriesService.name)
 
   async create(data: Prisma.HistoryUncheckedCreateInput) {
@@ -62,63 +80,104 @@ export class HistoriesService {
       const skip = (page - 1) * PAGE_SIZE
       const take = PAGE_SIZE
 
-      let orderBy: string = ''
+      let orderBy: KSLOrderBy = 'histories.date'
 
-      let conditions: string = ''
+      let sortOrder: OrderByDirectionExpression = 'desc'
 
-      if (sort_by) {
-        const [column, direction] = sort_by.split('.')
-        const columnName = MOVIE_FILTER_COLUMNS[column] as string
+      let selectedRatingSource: RatingSource = 'TMDB'
 
-        switch (column) {
-          case 'rating_imdb':
-          case 'rating_tmdb':
-          case 'rating_rotten':
-          case 'rating_metacritic':
-            orderBy = `mr.value ${direction}`
-            conditions = conditions + `AND mr.rating_source = "${columnName}"`
-            break
-          case 'release_date':
-            conditions = conditions + `AND mr.rating_source = "IMDB"`
-            orderBy = `m.release_date ${direction}`
-            break
-          case 'watched_date':
-            conditions = conditions + `AND mr.rating_source = "IMDB"`
-            orderBy = `h.date ${direction}`
-            break
-          default:
-            conditions = conditions + `AND mr.rating_source = "IMDB"`
-            orderBy = `h.date desc`
-        }
+      const [column, direction] = sort_by.split('.')
+      sortOrder = direction as OrderByDirectionExpression
+      switch (column) {
+        case 'rating_imdb':
+        case 'rating_tmdb':
+        case 'rating_rotten':
+        case 'rating_metacritic':
+          orderBy = 'movie_ratings.value'
+          selectedRatingSource = MOVIE_FILTER_COLUMNS[column] as RatingSource
+          break
+        case 'release_date':
+          orderBy = 'movies.release_date'
+          break
+        case 'watched_date':
+          orderBy = 'histories.date'
+          break
+        default:
+          orderBy = 'histories.date'
       }
 
-      if (watched_year) {
-        conditions = conditions + `AND YEAR(h.data) = "${watched_year}" `
-      }
-
-      if (release_year) {
-        conditions = conditions + `AND YEAR(m.release_date) = "${watched_year}"`
-      }
+      const dbQuery = this.kysely
+        .selectFrom('histories')
+        .innerJoin('movies', 'movies.id', 'histories.movie_id')
+        .innerJoin('movie_ratings', 'movie_ratings.movie_id', 'movies.id')
+        .selectAll()
+        .where('user_id', '=', userId)
+        .where('movie_ratings.rating_source', '=', selectedRatingSource)
+        .orderBy(orderBy, sortOrder)
+        .limit(take)
+        .offset(skip)
 
       if (genre_id) {
-        conditions = conditions + `AND mg.genre_id = "${genre_id}" `
+        return await dbQuery
+          .innerJoin(
+            'movie_genres',
+            'movie_genres.movie_id',
+            'histories.movie_id',
+          )
+          .where('movie_genres.genre_id', '=', genre_id)
+          .execute()
       }
 
       if (person_id) {
-        conditions = conditions + `AND mp.person_id = "${person_id}" `
+        return await dbQuery
+          .innerJoin(
+            'movie_person',
+            'movie_person.movie_id',
+            'histories.movie_id',
+          )
+          .where('movie_person.person_id', '=', person_id)
+          .select('movie_person.character')
+          .execute()
       }
 
       if (company_id) {
-        conditions = conditions + `AND mc.company_id = "${company_id}"`
+        return await dbQuery
+          .innerJoin(
+            'movie_companies',
+            'movie_companies.movie_id',
+            'histories.movie_id',
+          )
+          .where('movie_companies.company_id', '=', company_id)
+          .execute()
       }
 
-      const query = `SELECT DISTINCT m.*, h.date, h.rating, mr.rating_source, mr.value FROM histories h JOIN movies m ON h.movie_id = m.id JOIN movie_ratings mr ON m.id = mr.movie_id LEFT JOIN movie_person mp ON m.id = mp.movie_id LEFT JOIN movie_genres mg ON m.id = mg.movie_id LEFT JOIN movie_companies mc ON m.id = mc.movie_id WHERE h.user_id = "${userId}" ${conditions} ORDER BY ${orderBy} LIMIT ${take} OFFSET ${skip}`
+      if (watched_year) {
+        return await dbQuery
+          .where(
+            'histories.date',
+            '>=',
+            new Date(`${watched_year}-01-01T00:00:00Z`),
+          )
+          .where(
+            'histories.date',
+            '<=',
+            new Date(`${Number(watched_year) + 1}-01-01T00:00:00Z`),
+          )
+          .execute()
+      }
 
-      this.logger.debug(query)
+      if (release_year) {
+        return await dbQuery
+          .where('movies.release_date', '>=', new Date(`${release_year}-01-01`))
+          .where(
+            'movies.release_date',
+            '<=',
+            new Date(`${Number(release_year) + 1}-01-01`),
+          )
+          .execute()
+      }
 
-      const result = await this.prisma.$queryRawUnsafe(query)
-
-      return result
+      return await dbQuery.execute()
     } catch (error) {
       return []
     }
