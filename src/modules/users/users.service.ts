@@ -55,4 +55,15 @@ export class UsersService {
       },
     })
   }
+
+  async getPreferredRatingSource(userId: string) {
+    return await this.prisma.user.findFirst({
+      select: {
+        preferredRating: true,
+      },
+      where: {
+        id: userId,
+      },
+    })
+  }
 }

@@ -17,10 +17,14 @@ import { CreateHistoryDto } from './dto/create-history.dto'
 import { queryStringDto, queryStringSchema } from './dto/query-histories.dto'
 import { UpdateHistoryDto } from './dto/update-history.dto'
 import { HistoriesService } from './histories.service'
+import { UserHistoriesService } from './user-histories.service'
 
 @Controller('histories')
 export class HistoriesController {
-  constructor(private readonly historiesService: HistoriesService) {}
+  constructor(
+    private readonly historiesService: HistoriesService,
+    private readonly userHistoriesService: UserHistoriesService,
+  ) {}
 
   @Post()
   @ApiBearerAuth()
@@ -54,7 +58,7 @@ export class HistoriesController {
     @Param('userId') userId: string,
     @Query(new ZodValidationPipe(queryStringSchema)) query: queryStringDto,
   ) {
-    return this.historiesService.fetchUserHistory(userId, query)
+    return this.userHistoriesService.fetchUserHistory(userId, query)
   }
 
   @Patch(':id')
