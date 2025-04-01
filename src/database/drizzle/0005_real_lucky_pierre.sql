@@ -1,1 +1,0 @@
-ALTER TABLE `movie_ratings` MODIFY COLUMN `updated_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);

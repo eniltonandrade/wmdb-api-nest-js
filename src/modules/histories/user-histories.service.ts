@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { RatingSource } from '@prisma/client'
 import { Kysely, OrderByDirectionExpression } from 'kysely'
+import { jsonArrayFrom } from 'kysely/helpers/postgres'
 import { InjectKysely } from 'nestjs-kysely'
 import { DB } from 'prisma/generated/types'
 
@@ -136,11 +137,26 @@ export class UserHistoriesService {
             ),
         )
         .where('movie_ratings.rating_source', '=', selectedRatingSource)
-        .selectAll(['histories', 'movies', 'movie_ratings'])
+        .selectAll(['histories', 'movies'])
+        .select((eb) => [
+          'histories.id',
+          jsonArrayFrom(
+            eb
+              .selectFrom('movie_ratings')
+              .select(['movie_ratings.rating_source', 'movie_ratings.value'])
+              .whereRef('movie_ratings.movie_id', '=', 'histories.movie_id'),
+          ).as('ratings'),
+        ])
         .orderBy(orderBy, sortOrder)
+        .groupBy([
+          'histories.id',
+          'movies.id',
+          'movie_ratings.value',
+          'movie_ratings.movie_id',
+          'movie_ratings.rating_source',
+        ])
         .limit(take)
         .offset(skip)
-        .distinct()
 
       const totalCount = await dbQuery
         .select(({ fn }) => fn.count<number>('histories.id').as('total'))
@@ -153,22 +169,21 @@ export class UserHistoriesService {
         date: record.date,
         rating: record.rating,
         movie: {
-          imdb_id: record.imdb_id,
-          original_title: record.original_title,
-          poster_path: record.poster_path,
-          release_date: record.release_date.toISOString(),
-          backdrop_path: record.backdrop_path,
+          imdbId: record.imdb_id,
+          posterPath: record.poster_path,
+          releaseDate: record.release_date.toISOString(),
+          backdropPath: record.backdrop_path,
           title: record.title,
-          tmdb_id: record.tmdb_id,
-          ratings: {
-            source: record.rating_source,
-            value: record.value,
-          },
+          tmdbId: record.tmdb_id,
+          ratings: record.ratings.map((rating) => ({
+            ratingSource: rating.rating_source,
+            value: rating.value,
+          })),
         },
       }))
 
       return {
-        total: totalCount?.total || 0,
+        total: Number(totalCount?.total) || 0,
         results: mappedResults,
       }
     } catch (error) {

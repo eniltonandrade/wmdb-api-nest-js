@@ -1,15 +1,11 @@
 import { Logger, Module } from '@nestjs/common'
-import { LogEvent, MysqlDialect } from 'kysely'
-import { createPool } from 'mysql2'
+import { LogEvent, PostgresDialect } from 'kysely'
 import { KyselyModule } from 'nestjs-kysely'
+import { Pool } from 'pg'
 
 import { EnvModule } from '@/env/env.module'
 import { EnvService } from '@/env/env.service'
 
-import {
-  DrizzleAsyncProvider,
-  drizzleProvider,
-} from './drizzle/drizzle.provider'
 import { PrismaService } from './prisma/prisma.service'
 
 const logger = new Logger('DATABASE')
@@ -30,13 +26,21 @@ const logger = new Logger('DATABASE')
             logger.error(`Error: ${event.error}`)
           }
         },
-        dialect: new MysqlDialect({
-          pool: createPool(env.get('DATABASE_URL')),
+        dialect: new PostgresDialect({
+          pool: new Pool({
+            database: env.get('DATABASE_NAME'),
+            host: env.get('DATABASE_HOST'),
+            user: env.get('DATABASE_USER'),
+            password: env.get('DATABASE_PASSWORD'),
+            port: 5432,
+            max: 10,
+            ssl: true,
+          }),
         }),
       }),
     }),
   ],
-  providers: [...drizzleProvider, PrismaService], // No need to provide EnvService here
-  exports: [DrizzleAsyncProvider, PrismaService],
+  providers: [PrismaService], // No need to provide EnvService here
+  exports: [PrismaService],
 })
 export class DatabaseModule {}

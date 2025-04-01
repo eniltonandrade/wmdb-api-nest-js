@@ -7,16 +7,18 @@ export const userMovieHistory = z.object({
   review: z.string().optional().nullable(),
   rating: z.number().optional().nullable(),
   movie: z.object({
-    backdrop_path: z.string().nullable(),
-    imdb_id: z.string(),
-    poster_path: z.string().nullable(),
-    release_date: z.string(),
+    backdropPath: z.string().nullable(),
+    imdbId: z.string(),
+    posterPath: z.string().nullable(),
+    releaseDate: z.string(),
     title: z.string(),
-    tmdb_id: z.number(),
-    ratings: z.object({
-      source: z.enum(['IMDB', 'TMDB', 'ROTTEN_TOMATOES', 'METACRITIC']),
-      value: z.number(),
-    }),
+    tmdbId: z.number(),
+    ratings: z.array(
+      z.object({
+        ratingSource: z.string(),
+        value: z.number(),
+      }),
+    ),
   }),
 })
 
