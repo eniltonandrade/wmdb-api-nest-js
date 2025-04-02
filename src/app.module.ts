@@ -13,6 +13,7 @@ import { GenresModule } from './modules/genres/genres.module'
 import { HistoriesModule } from './modules/histories/histories.module'
 import { MoviesModule } from './modules/movies/movies.module'
 import { PeopleModule } from './modules/people/people.module'
+import { ReportsModule } from './modules/reports/reports.module'
 import { UsersModule } from './modules/users/users.module'
 
 @Module({
@@ -30,6 +31,7 @@ import { UsersModule } from './modules/users/users.module'
     PeopleModule,
     CompaniesModule,
     HistoriesModule,
+    ReportsModule,
   ],
   controllers: [],
   providers: [

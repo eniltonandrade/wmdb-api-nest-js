@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common'
 import { Movie, Prisma } from '@prisma/client'
 
 import { PrismaService } from '@/database/prisma/prisma.service'
@@ -108,96 +112,100 @@ export class MoviesService {
     movieId: string,
     data: CreateMovieRelationshipsDto,
   ) {
-    const {
-      casts: { cast, crew },
-      production_companies,
-      genres,
-      ratings,
-    } = data
+    try {
+      const {
+        casts: { cast, crew },
+        production_companies,
+        genres,
+        ratings,
+      } = data
 
-    const groupedPromises: Promise<void | null>[] = []
+      const groupedPromises: Promise<void | null>[] = []
 
-    cast.forEach(async (cast) => {
-      groupedPromises.push(
-        this.peopleService.addPersonToMovie(
-          {
-            name: cast.name,
-            tmdbId: cast.id,
-            gender: cast.gender,
-            profilePath: cast.profile_path,
-          },
-          {
-            movieId,
-            role: cast.gender === 1 ? 'ACTRESS' : 'ACTOR',
-            character: cast.character,
-            order: cast.order,
-          },
-        ),
-      )
-    })
-
-    const onlyValidCrew = crew.filter(
-      (c) => c.job === 'Director' || c.job === 'Screenplay',
-    )
-
-    onlyValidCrew.forEach(async (crew) => {
-      await this.peopleService.addPersonToMovie(
-        {
-          name: crew.name,
-          tmdbId: crew.id,
-          gender: crew.gender,
-          profilePath: crew.profile_path,
-        },
-        {
-          movieId,
-          role: crew.job === 'Director' ? 'DIRECTOR' : 'WRITER',
-        },
-      )
-    })
-
-    production_companies.forEach(async (company) => {
-      groupedPromises.push(
-        this.companiesService.addCompanyToMovie(
-          {
-            name: company.name,
-            tmdbId: company.id,
-            logoPath: company.logo_path,
-          },
-          movieId,
-        ),
-      )
-    })
-
-    genres.forEach(async (genre) => {
-      groupedPromises.push(
-        this.genresService.addGenreToMovie(
-          {
-            name: genre.name,
-            tmdbId: genre.id,
-          },
-          movieId,
-        ),
-      )
-    })
-
-    ratings.forEach(async (item) => {
-      await this.prisma.ratingsOnMovies.upsert({
-        create: {
-          ratingSource: item.source,
-          value: item.value,
-          movieId,
-        },
-        update: {},
-        where: {
-          ratingSource_movieId: {
-            movieId,
-            ratingSource: item.source,
-          },
-        },
+      cast.forEach(async (cast) => {
+        groupedPromises.push(
+          this.peopleService.addPersonToMovie(
+            {
+              name: cast.name,
+              tmdbId: cast.id,
+              gender: cast.gender,
+              profilePath: cast.profile_path,
+            },
+            {
+              movieId,
+              role: cast.gender === 1 ? 'ACTRESS' : 'ACTOR',
+              character: cast.character,
+              order: cast.order,
+            },
+          ),
+        )
       })
-    })
 
-    await Promise.all(groupedPromises)
+      const onlyValidCrew = crew.filter(
+        (c) => c.job === 'Director' || c.job === 'Screenplay',
+      )
+
+      onlyValidCrew.forEach(async (crew) => {
+        await this.peopleService.addPersonToMovie(
+          {
+            name: crew.name,
+            tmdbId: crew.id,
+            gender: crew.gender,
+            profilePath: crew.profile_path,
+          },
+          {
+            movieId,
+            role: crew.job === 'Director' ? 'DIRECTOR' : 'WRITER',
+          },
+        )
+      })
+
+      production_companies.forEach(async (company) => {
+        groupedPromises.push(
+          this.companiesService.addCompanyToMovie(
+            {
+              name: company.name,
+              tmdbId: company.id,
+              logoPath: company.logo_path,
+            },
+            movieId,
+          ),
+        )
+      })
+
+      genres.forEach(async (genre) => {
+        groupedPromises.push(
+          this.genresService.addGenreToMovie(
+            {
+              name: genre.name,
+              tmdbId: genre.id,
+            },
+            movieId,
+          ),
+        )
+      })
+
+      ratings.forEach(async (item) => {
+        await this.prisma.ratingsOnMovies.upsert({
+          create: {
+            ratingSource: item.source,
+            value: item.value,
+            movieId,
+          },
+          update: {},
+          where: {
+            ratingSource_movieId: {
+              movieId,
+              ratingSource: item.source,
+            },
+          },
+        })
+      })
+
+      await Promise.all(groupedPromises)
+    } catch (error) {
+      throw new InternalServerErrorException()
+    }
   }
 
   async updateMovieRating(movieId: string, data: MovieRatingsDto[]) {

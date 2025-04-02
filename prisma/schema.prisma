@@ -96,7 +96,7 @@ model Movie {
 model Genre {
   id     String           @id @default(uuid())
   name   String
-  tmdbId Int              @unique
+  tmdbId Int              @unique @map("tmdb_id")
   movies GenresOnMovies[]
 
   @@map("genres")
@@ -105,7 +105,7 @@ model Genre {
 model Company {
   id       String              @id @default(uuid())
   name     String
-  tmdbId   Int                 @unique
+  tmdbId   Int                 @unique @map("tmdb_id")
   logoPath String?             @map("logo_path")
   movies   CompaniesOnMovies[]
 
@@ -115,7 +115,7 @@ model Company {
 model Person {
   id          String           @id @default(uuid())
   name        String
-  tmdbId      Int              @unique
+  tmdbId      Int              @unique @map("tmdb_id")
   gender      Int?
   profilePath String?          @map("profile_path")
   createdAt   DateTime         @default(now()) @map("created_at")

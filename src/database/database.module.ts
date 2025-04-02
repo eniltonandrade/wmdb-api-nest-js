@@ -1,7 +1,7 @@
 import { Logger, Module } from '@nestjs/common'
 import { LogEvent, PostgresDialect } from 'kysely'
 import { KyselyModule } from 'nestjs-kysely'
-import { Pool } from 'pg'
+import { Pool, types } from 'pg'
 
 import { EnvModule } from '@/env/env.module'
 import { EnvService } from '@/env/env.service'
@@ -9,6 +9,7 @@ import { EnvService } from '@/env/env.service'
 import { PrismaService } from './prisma/prisma.service'
 
 const logger = new Logger('DATABASE')
+types.setTypeParser(types.builtins.INT8, (val) => Number(val))
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ const logger = new Logger('DATABASE')
       useFactory: (env: EnvService) => ({
         log: (event: LogEvent) => {
           if (event.level === 'query') {
-            logger.log(`SQL: ${event.query.sql}`)
+            logger.debug(`SQL: ${event.query.sql}`)
             logger.debug(`Params: ${JSON.stringify(event.query.parameters)}`)
             logger.verbose(`Execution time: ${event.queryDurationMillis}ms`)
           } else if (event.level === 'error') {

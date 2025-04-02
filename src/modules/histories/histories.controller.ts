@@ -19,7 +19,8 @@ import { UpdateHistoryDto } from './dto/update-history.dto'
 import { HistoriesService } from './histories.service'
 import { UserHistoriesService } from './user-histories.service'
 
-@Controller('histories')
+@Controller('user/histories')
+@ApiBearerAuth()
 export class HistoriesController {
   constructor(
     private readonly historiesService: HistoriesService,
@@ -27,7 +28,6 @@ export class HistoriesController {
   ) {}
 
   @Post()
-  @ApiBearerAuth()
   async create(
     @Body() body: CreateHistoryDto,
     @CurrentUser() user: UserPayload,
@@ -43,26 +43,20 @@ export class HistoriesController {
     })
   }
 
+  @Get('/movie/:movieId')
+  findOne(@CurrentUser() user: UserPayload, @Param('movieId') movieId: string) {
+    return this.historiesService.findOneByUserAndMovie(user.sub, movieId)
+  }
+
   @Get()
-  findAll() {
-    return this.historiesService.findAll()
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.historiesService.findOne(+id)
-  }
-
-  @Get('/users/:userId')
   fetchUserHistory(
-    @Param('userId') userId: string,
+    @CurrentUser() user: UserPayload,
     @Query(new ZodValidationPipe(queryStringSchema)) query: queryStringDto,
   ) {
-    return this.userHistoriesService.fetchUserHistory(userId, query)
+    return this.userHistoriesService.fetchUserHistory(user.sub, query)
   }
 
   @Patch(':id')
-  @ApiBearerAuth()
   update(@Param('id') id: string, @Body() body: UpdateHistoryDto) {
     const { date, rating, review } = body
     return this.historiesService.update(id, {

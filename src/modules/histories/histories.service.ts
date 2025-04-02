@@ -21,12 +21,22 @@ export class HistoriesService {
     })
   }
 
-  findAll() {
-    return `This action returns all history`
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} history`
+  async findOneByUserAndMovie(userId: string, movieId: string) {
+    return await this.prisma.history.findUnique({
+      select: {
+        id: true,
+        date: true,
+        review: true,
+        rating: true,
+        tags: true,
+      },
+      where: {
+        movieId_userId: {
+          movieId,
+          userId,
+        },
+      },
+    })
   }
 
   update(id: string, data: Prisma.HistoryUpdateInput) {
@@ -38,7 +48,11 @@ export class HistoriesService {
     })
   }
 
-  remove(userId: string) {
-    return `This action removes a #${userId} history`
+  async remove(historyId: string) {
+    return await this.prisma.history.delete({
+      where: {
+        id: historyId,
+      },
+    })
   }
 }

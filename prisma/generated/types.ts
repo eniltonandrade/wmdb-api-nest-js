@@ -103,7 +103,7 @@ export type MoviesOnLists = {
 export type Person = {
     id: string;
     name: string;
-    tmdbId: number;
+    tmdb_id: number;
     gender: number | null;
     profile_path: string | null;
     created_at: Generated<Timestamp>;

@@ -137,6 +137,12 @@ export class UserHistoriesService {
             ),
         )
         .where('movie_ratings.rating_source', '=', selectedRatingSource)
+
+      const totalCount = await dbQuery
+        .select(({ fn }) => fn.count<number>('histories.id').as('total'))
+        .executeTakeFirst()
+
+      const results = await dbQuery
         .selectAll(['histories', 'movies'])
         .select((eb) => [
           'histories.id',
@@ -157,12 +163,7 @@ export class UserHistoriesService {
         ])
         .limit(take)
         .offset(skip)
-
-      const totalCount = await dbQuery
-        .select(({ fn }) => fn.count<number>('histories.id').as('total'))
-        .executeTakeFirst()
-
-      const results = await dbQuery.execute()
+        .execute()
 
       const mappedResults: UserMovieHistoryDto[] = results.map((record) => ({
         id: record.id,
@@ -183,7 +184,7 @@ export class UserHistoriesService {
       }))
 
       return {
-        total: Number(totalCount?.total) || 0,
+        total: totalCount?.total || 0,
         results: mappedResults,
       }
     } catch (error) {
