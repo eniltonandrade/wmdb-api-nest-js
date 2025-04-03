@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Put, UsePipes } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Put,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common'
 import { ApiBearerAuth } from '@nestjs/swagger'
 
 import { ZodValidationPipe } from '@/pipes/zod-validation.pipe'
@@ -15,6 +23,8 @@ import {
   UpdatePasswordDto,
 } from './dto/update-password.dto'
 import { UserPayload } from './jwt.strategy'
+import { RefreshPayload } from './jwt-refresh.strategy'
+import { JwtRefreshAuthGuard } from './jwt-refresh-auth.guard'
 import { Public } from './public'
 
 @Controller('sessions')
@@ -50,5 +60,18 @@ export class AuthController {
   ) {
     const { password } = body
     return this.authService.updatePassword(user.sub, password)
+  }
+
+  @Public()
+  @UseGuards(JwtRefreshAuthGuard)
+  @Get('refresh')
+  refreshTokens(@CurrentUser() user: RefreshPayload) {
+    const refreshToken = user.refreshToken
+    return this.authService.refreshTokens(user.sub, refreshToken)
+  }
+
+  @Post('signout')
+  logout(@CurrentUser() user: RefreshPayload) {
+    return this.authService.signOut(user.sub)
   }
 }

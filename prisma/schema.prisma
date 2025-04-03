@@ -29,6 +29,7 @@ model User {
   passwordHash    String?       @map("password_hash")
   avatarUrl       String?       @map("avatar_url")
   preferredRating RatingSource? @default(TMDB) @map("preferred_rating")
+  refreshToken    String?       @map("refresh_token")
 
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
