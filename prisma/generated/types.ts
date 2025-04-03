@@ -50,13 +50,13 @@ export type CompaniesOnMovies = {
 export type Company = {
     id: string;
     name: string;
-    tmdbId: number;
+    tmdb_id: number;
     logo_path: string | null;
 };
 export type Genre = {
     id: string;
     name: string;
-    tmdbId: number;
+    tmdb_id: number;
 };
 export type GenresOnMovies = {
     movie_id: string;
@@ -146,7 +146,7 @@ export type User = {
     email: string;
     password_hash: string | null;
     avatar_url: string | null;
-    preferred_rating: RatingSource | null;
+    preferred_rating: Generated<RatingSource | null>;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
 };

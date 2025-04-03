@@ -143,7 +143,7 @@ export class ReportsService {
       .selectFrom(['histories', 'movie_ratings', 'movie_genres', 'genres'])
       .select(({ fn }) => [
         'genres.id',
-        'genres.tmdbId',
+        'genres.tmdb_id',
         'genres.name',
         fn.count<number>('histories.id').as('count'),
         sql<number>`CAST(AVG(movie_ratings.value)::numeric AS decimal(4,1))`.as(
@@ -155,11 +155,11 @@ export class ReportsService {
       .whereRef('movie_genres.genre_id', '=', 'genres.id')
       .where('user_id', '=', userId)
       .$if(!!id, (qb) => qb.where('genre_id', '=', id!))
-      .$if(!!tmdb_id, (qb) => qb.where('genres.tmdbId', '=', tmdb_id!))
+      .$if(!!tmdb_id, (qb) => qb.where('genres.tmdb_id', '=', tmdb_id!))
       .where('movie_ratings.rating_source', '=', selectedRatingSource)
       .$if(column === 'average', (qb) => qb.orderBy('average', sortOrder))
       .$if(column === 'count', (qb) => qb.orderBy('count', sortOrder))
-      .groupBy(['genres.id', 'genres.tmdbId', 'genres.name'])
+      .groupBy(['genres.id', 'genres.tmdb_id', 'genres.name'])
 
     const subQuery = dbQuery.as('sub_query')
 
@@ -208,7 +208,7 @@ export class ReportsService {
       ])
       .select(({ fn }) => [
         'companies.id',
-        'companies.tmdbId',
+        'companies.tmdb_id',
         'companies.name',
         fn.count<number>('histories.id').as('count'),
         sql<number>`CAST(AVG(movie_ratings.value)::numeric AS decimal(4,1))`.as(
@@ -221,12 +221,12 @@ export class ReportsService {
       .$if(!!query, (qb) => qb.where('companies.name', 'ilike', `%${query}%`))
       .where('user_id', '=', userId)
       .$if(!!id, (qb) => qb.where('company_id', '=', id!))
-      .$if(!!tmdb_id, (qb) => qb.where('companies.tmdbId', '=', tmdb_id!))
+      .$if(!!tmdb_id, (qb) => qb.where('companies.tmdb_id', '=', tmdb_id!))
       .where('movie_ratings.rating_source', '=', selectedRatingSource)
       .$if(column === 'average', (qb) => qb.orderBy('average', sortOrder))
       .$if(column === 'count', (qb) => qb.orderBy('count', sortOrder))
       .$if(column === 'name', (qb) => qb.orderBy('companies.name', sortOrder))
-      .groupBy(['companies.id', 'companies.tmdbId', 'companies.name'])
+      .groupBy(['companies.id', 'companies.tmdb_id', 'companies.name'])
 
     const subQuery = dbQuery.as('sub_query')
 
