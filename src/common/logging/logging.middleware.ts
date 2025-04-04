@@ -47,6 +47,7 @@ export class LoggingMiddleware implements NestMiddleware {
     const sanitized = { ...data }
     if ('password' in sanitized) sanitized.password = '****'
     if ('access_token' in sanitized) sanitized.access_token = '****'
+    if ('refresh_token' in sanitized) sanitized.refresh_token = '****'
 
     return sanitized
   }

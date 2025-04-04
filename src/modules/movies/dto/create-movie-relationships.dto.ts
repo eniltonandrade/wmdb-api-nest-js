@@ -40,7 +40,7 @@ export const createMovieRelationshipsSchema = z.object({
   ratings: z.array(
     z.object({
       source: z.enum(['IMDB', 'TMDB', 'ROTTEN_TOMATOES', 'METACRITIC']),
-      value: z.number(),
+      value: z.coerce.number(),
     }),
   ),
 })

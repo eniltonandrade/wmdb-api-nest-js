@@ -156,6 +156,7 @@ export type DB = {
     companies: Company;
     genres: Genre;
     histories: History;
+    history_tags: TagsOnHistory;
     list_movies: MoviesOnLists;
     lists: List;
     movie_companies: CompaniesOnMovies;
@@ -165,7 +166,6 @@ export type DB = {
     movies: Movie;
     people: Person;
     tags: Tag;
-    TagsOnHistory: TagsOnHistory;
     tokens: Token;
     users: User;
 };

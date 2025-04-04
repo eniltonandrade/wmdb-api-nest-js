@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { RatingSource } from '@prisma/client'
 import { Kysely, OrderByDirectionExpression } from 'kysely'
-import { jsonArrayFrom } from 'kysely/helpers/postgres'
+import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres'
 import { InjectKysely } from 'nestjs-kysely'
 import { DB } from 'prisma/generated/types'
 
@@ -71,6 +71,9 @@ export class UserHistoriesService {
           orderBy = 'movie_ratings.value'
           selectedRatingSource = MOVIE_FILTER_COLUMNS[column] as RatingSource
           break
+        case 'rating_user':
+          orderBy = 'histories.rating'
+          break
         case 'release_date':
           orderBy = 'movies.release_date'
           break
@@ -86,7 +89,14 @@ export class UserHistoriesService {
         .innerJoin('movies', 'movies.id', 'histories.movie_id')
         .innerJoin('movie_ratings', 'movie_ratings.movie_id', 'movies.id')
         .where('user_id', '=', userId)
-        .$if(!!query, (qb) => qb.where('movies.title', 'like', `%${query}%`))
+        .$if(!!query, (qb) =>
+          qb.where((eb) =>
+            eb.or([
+              eb('movies.title', 'ilike', `%${query}%`),
+              eb('movies.original_title', 'ilike', `%${query}%`),
+            ]),
+          ),
+        )
         .$if(!!person_id, (qb) =>
           qb
             .innerJoin(
@@ -137,6 +147,9 @@ export class UserHistoriesService {
             ),
         )
         .where('movie_ratings.rating_source', '=', selectedRatingSource)
+        .$if(column === 'rating_user', (qb) =>
+          qb.where('histories.rating', 'is not', null),
+        )
 
       const totalCount = await dbQuery
         .select(({ fn }) => fn.count<number>('histories.id').as('total'))
@@ -153,6 +166,18 @@ export class UserHistoriesService {
               .whereRef('movie_ratings.movie_id', '=', 'histories.movie_id'),
           ).as('ratings'),
         ])
+        .$if(!!person_id, (qb) =>
+          qb.select((eb) => [
+            'histories.id',
+            jsonObjectFrom(
+              eb
+                .selectFrom('movie_person')
+                .select(['movie_person.character', 'movie_person.role'])
+                .whereRef('movie_person.movie_id', '=', 'histories.movie_id')
+                .where('movie_person.person_id', '=', person_id!),
+            ).as('credits'),
+          ]),
+        )
         .orderBy(orderBy, sortOrder)
         .groupBy([
           'histories.id',
@@ -170,6 +195,7 @@ export class UserHistoriesService {
         date: record.date,
         rating: record.rating,
         movie: {
+          id: record.movie_id,
           imdbId: record.imdb_id,
           posterPath: record.poster_path,
           releaseDate: record.release_date.toISOString(),
@@ -180,6 +206,7 @@ export class UserHistoriesService {
             ratingSource: rating.rating_source,
             value: rating.value,
           })),
+          credits: record.credits,
         },
       }))
 

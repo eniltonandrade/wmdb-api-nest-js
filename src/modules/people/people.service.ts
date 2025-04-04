@@ -90,10 +90,9 @@ export class PeopleService {
 
     const sameRoleExists = await this.prisma.personOnMovies.findUnique({
       where: {
-        personId_movieId_role: {
+        personId_movieId: {
           personId: personFoundOrCreated.id,
           movieId: data.movieId,
-          role: data.role,
         },
       },
     })

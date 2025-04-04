@@ -24,7 +24,8 @@ CREATE TABLE "users" (
     "email" TEXT NOT NULL,
     "password_hash" TEXT,
     "avatar_url" TEXT,
-    "preferred_rating" "RatingSource",
+    "preferred_rating" "RatingSource" DEFAULT 'TMDB',
+    "refresh_token" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -72,7 +73,7 @@ CREATE TABLE "movies" (
 CREATE TABLE "genres" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "tmdbId" INTEGER NOT NULL,
+    "tmdb_id" INTEGER NOT NULL,
 
     CONSTRAINT "genres_pkey" PRIMARY KEY ("id")
 );
@@ -81,7 +82,7 @@ CREATE TABLE "genres" (
 CREATE TABLE "companies" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "tmdbId" INTEGER NOT NULL,
+    "tmdb_id" INTEGER NOT NULL,
     "logo_path" TEXT,
 
     CONSTRAINT "companies_pkey" PRIMARY KEY ("id")
@@ -91,7 +92,7 @@ CREATE TABLE "companies" (
 CREATE TABLE "people" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "tmdbId" INTEGER NOT NULL,
+    "tmdb_id" INTEGER NOT NULL,
     "gender" INTEGER,
     "profile_path" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -186,11 +187,11 @@ CREATE TABLE "histories" (
 );
 
 -- CreateTable
-CREATE TABLE "TagsOnHistory" (
+CREATE TABLE "history_tags" (
     "historyId" TEXT NOT NULL,
     "tagId" TEXT NOT NULL,
 
-    CONSTRAINT "TagsOnHistory_pkey" PRIMARY KEY ("historyId","tagId")
+    CONSTRAINT "history_tags_pkey" PRIMARY KEY ("historyId","tagId")
 );
 
 -- CreateIndex
@@ -209,13 +210,13 @@ CREATE UNIQUE INDEX "movies_imdb_id_key" ON "movies"("imdb_id");
 CREATE UNIQUE INDEX "movies_tmdb_id_key" ON "movies"("tmdb_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "genres_tmdbId_key" ON "genres"("tmdbId");
+CREATE UNIQUE INDEX "genres_tmdb_id_key" ON "genres"("tmdb_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "companies_tmdbId_key" ON "companies"("tmdbId");
+CREATE UNIQUE INDEX "companies_tmdb_id_key" ON "companies"("tmdb_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "people_tmdbId_key" ON "people"("tmdbId");
+CREATE UNIQUE INDEX "people_tmdb_id_key" ON "people"("tmdb_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "movie_genres_genre_id_movie_id_key" ON "movie_genres"("genre_id", "movie_id");
@@ -281,7 +282,7 @@ ALTER TABLE "histories" ADD CONSTRAINT "histories_movie_id_fkey" FOREIGN KEY ("m
 ALTER TABLE "histories" ADD CONSTRAINT "histories_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TagsOnHistory" ADD CONSTRAINT "TagsOnHistory_historyId_fkey" FOREIGN KEY ("historyId") REFERENCES "histories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "history_tags" ADD CONSTRAINT "history_tags_historyId_fkey" FOREIGN KEY ("historyId") REFERENCES "histories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TagsOnHistory" ADD CONSTRAINT "TagsOnHistory_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "tags"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "history_tags" ADD CONSTRAINT "history_tags_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "tags"("id") ON DELETE CASCADE ON UPDATE CASCADE;

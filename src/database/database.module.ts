@@ -35,7 +35,7 @@ types.setTypeParser(types.builtins.INT8, (val) => Number(val))
             password: env.get('DATABASE_PASSWORD'),
             port: 5432,
             max: 10,
-            ssl: true,
+            ssl: false,
           }),
         }),
       }),

@@ -95,8 +95,13 @@ export class ReportsService {
       .$if(!!tmdb_id, (qb) => qb.where('people.tmdb_id', '=', tmdb_id!))
       .where('movie_ratings.rating_source', '=', selectedRatingSource)
       .$if(!!gender, (qb) => qb.where('people.gender', '=', gender!))
-      .$if(column === 'average', (qb) => qb.orderBy('average', sortOrder))
+      .$if(column === 'average', (qb) =>
+        qb.orderBy('average', sortOrder).having('people.id', '>', '2'),
+      )
       .$if(column === 'count', (qb) => qb.orderBy('count', sortOrder))
+      .$if(column === 'average', (qb) =>
+        qb.having((eb) => eb.fn.count('histories.id'), '>', 2),
+      )
       .groupBy([
         'people.id',
         'people.tmdb_id',
@@ -106,19 +111,19 @@ export class ReportsService {
 
     const subQuery = dbQuery.as('sub_query')
 
-    const totalCount2 = await this.kysely
+    const totalCount = await this.kysely
       .selectFrom(subQuery)
       .select(({ fn }) => fn.countAll<number>().as('total'))
       .executeTakeFirst()
 
     const results = await dbQuery.offset(skip).limit(take).execute()
 
-    if (results.length === 1) {
+    if (results.length === 1 && id && tmdb_id && !query) {
       return results[0]
     }
 
     return {
-      total: totalCount2?.total || 0,
+      total: totalCount?.total || 0,
       results,
     }
   }
@@ -163,7 +168,7 @@ export class ReportsService {
 
     const subQuery = dbQuery.as('sub_query')
 
-    const totalCount2 = await this.kysely
+    const totalCount = await this.kysely
       .selectFrom(subQuery)
       .select(({ fn }) => fn.countAll<number>().as('total'))
       .executeTakeFirst()
@@ -175,7 +180,7 @@ export class ReportsService {
     }
 
     return {
-      total: totalCount2?.total || 0,
+      total: totalCount?.total || 0,
       results,
     }
   }

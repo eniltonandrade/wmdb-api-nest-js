@@ -122,45 +122,64 @@ export class MoviesService {
 
       const groupedPromises: Promise<void | null>[] = []
 
-      cast.forEach(async (cast) => {
-        groupedPromises.push(
-          this.peopleService.addPersonToMovie(
-            {
-              name: cast.name,
-              tmdbId: cast.id,
-              gender: cast.gender,
-              profilePath: cast.profile_path,
-            },
-            {
-              movieId,
-              role: cast.gender === 1 ? 'ACTRESS' : 'ACTOR',
-              character: cast.character,
-              order: cast.order,
-            },
-          ),
+      // await Promise.all(
+      //   cast.map((cast) =>
+      //     this.peopleService.addPersonToMovie(
+      //       {
+      //         name: cast.name,
+      //         tmdbId: cast.id,
+      //         gender: cast.gender,
+      //         profilePath: cast.profile_path,
+      //       },
+      //       {
+      //         movieId,
+      //         role: cast.gender === 1 ? 'ACTRESS' : 'ACTOR',
+      //         character: cast.character,
+      //         order: cast.order,
+      //       },
+      //     ),
+      //   ),
+      // )
+
+      for await (const item of cast) {
+        await this.peopleService.addPersonToMovie(
+          {
+            name: item.name,
+            tmdbId: item.id,
+            gender: item.gender,
+            profilePath: item.profile_path,
+          },
+          {
+            movieId,
+            role: item.gender === 1 ? 'ACTRESS' : 'ACTOR',
+            character: item.character,
+            order: item.order,
+          },
         )
-      })
+      }
 
       const onlyValidCrew = crew.filter(
         (c) => c.job === 'Director' || c.job === 'Screenplay',
       )
 
-      onlyValidCrew.forEach(async (crew) => {
-        await this.peopleService.addPersonToMovie(
-          {
-            name: crew.name,
-            tmdbId: crew.id,
-            gender: crew.gender,
-            profilePath: crew.profile_path,
-          },
-          {
-            movieId,
-            role: crew.job === 'Director' ? 'DIRECTOR' : 'WRITER',
-          },
-        )
-      })
+      await Promise.all(
+        onlyValidCrew.map((crew) =>
+          this.peopleService.addPersonToMovie(
+            {
+              name: crew.name,
+              tmdbId: crew.id,
+              gender: crew.gender,
+              profilePath: crew.profile_path,
+            },
+            {
+              movieId,
+              role: crew.job === 'Director' ? 'DIRECTOR' : 'WRITER',
+            },
+          ),
+        ),
+      )
 
-      production_companies.forEach(async (company) => {
+      for (const company of production_companies) {
         groupedPromises.push(
           this.companiesService.addCompanyToMovie(
             {
@@ -171,9 +190,9 @@ export class MoviesService {
             movieId,
           ),
         )
-      })
+      }
 
-      genres.forEach(async (genre) => {
+      for (const genre of genres) {
         groupedPromises.push(
           this.genresService.addGenreToMovie(
             {
@@ -183,24 +202,26 @@ export class MoviesService {
             movieId,
           ),
         )
-      })
+      }
 
-      ratings.forEach(async (item) => {
-        await this.prisma.ratingsOnMovies.upsert({
-          create: {
-            ratingSource: item.source,
-            value: item.value,
-            movieId,
-          },
-          update: {},
-          where: {
-            ratingSource_movieId: {
-              movieId,
+      await Promise.all(
+        ratings.map((item) =>
+          this.prisma.ratingsOnMovies.upsert({
+            create: {
               ratingSource: item.source,
+              value: item.value,
+              movieId,
             },
-          },
-        })
-      })
+            update: {},
+            where: {
+              ratingSource_movieId: {
+                movieId,
+                ratingSource: item.source,
+              },
+            },
+          }),
+        ),
+      )
 
       await Promise.all(groupedPromises)
     } catch (error) {

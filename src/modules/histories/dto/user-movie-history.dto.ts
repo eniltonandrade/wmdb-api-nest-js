@@ -19,6 +19,13 @@ export const userMovieHistory = z.object({
         value: z.number(),
       }),
     ),
+    credits: z
+      .object({
+        character: z.string().optional().nullable(),
+        role: z.string(),
+      })
+      .optional()
+      .nullable(),
   }),
 })
 

@@ -181,8 +181,8 @@ model PersonOnMovies {
   person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
   movie  Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
-  @@id([personId, movieId, role])
-  @@unique([personId, movieId, role])
+  @@id([personId, movieId])
+  @@unique([personId, movieId, character])
   @@map("movie_person")
 }
 
@@ -265,4 +265,5 @@ model TagsOnHistory {
   tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([historyId, tagId])
+  @@map("history_tags")
 }
