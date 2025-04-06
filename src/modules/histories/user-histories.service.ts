@@ -46,6 +46,7 @@ export class UserHistoriesService {
         person_id,
         release_year,
         watched_year,
+        tag_id,
         query,
       } = params
 
@@ -80,6 +81,9 @@ export class UserHistoriesService {
         case 'watched_date':
           orderBy = 'histories.date'
           break
+        case 'average_rating':
+          orderBy = 'movies.average_rating'
+          break
         default:
           orderBy = 'histories.date'
       }
@@ -105,6 +109,15 @@ export class UserHistoriesService {
               'histories.movie_id',
             )
             .where('movie_person.person_id', '=', person_id!),
+        )
+        .$if(!!tag_id, (qb) =>
+          qb
+            .innerJoin(
+              'history_tags',
+              'history_tags.history_id',
+              'histories.id',
+            )
+            .where('history_tags.tag_id', '=', tag_id!),
         )
         .$if(!!genre_id, (qb) =>
           qb
@@ -196,11 +209,12 @@ export class UserHistoriesService {
         rating: record.rating,
         movie: {
           id: record.movie_id,
-          imdbId: record.imdb_id,
-          posterPath: record.poster_path,
-          releaseDate: record.release_date.toISOString(),
-          backdropPath: record.backdrop_path,
           title: record.title,
+          releaseDate: record.release_date.toISOString(),
+          posterPath: record.poster_path,
+          backdropPath: record.backdrop_path,
+          averageRating: record.average_rating,
+          imdbId: record.imdb_id,
           tmdbId: record.tmdb_id,
           ratings: record.ratings.map((rating) => ({
             ratingSource: rating.rating_source,

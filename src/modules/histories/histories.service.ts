@@ -29,6 +29,9 @@ export class HistoriesService {
     }
 
     return this.prisma.history.create({
+      select: {
+        id: true,
+      },
       data,
     })
   }

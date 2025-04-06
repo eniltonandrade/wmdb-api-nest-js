@@ -14,3 +14,22 @@ export const MOVIE_COLUMNS_MAP: MovieColumns = {
   rotten_tomatoes_rating: 'ROTTEN_TOMATOES',
   metacritic_rating: 'METACRITIC',
 }
+
+export const DEFAULT_TAGS = [
+  {
+    name: 'Cinema',
+    colorHex: '#B11226',
+  },
+  {
+    name: 'Netflix',
+    colorHex: '#E50914',
+  },
+  {
+    name: 'Prime Video',
+    colorHex: '#00A8E1',
+  },
+  {
+    name: 'Stremio',
+    colorHex: '#664181',
+  },
+]

@@ -6,6 +6,7 @@ import {
 import { Movie, Prisma } from '@prisma/client'
 
 import { PrismaService } from '@/database/prisma/prisma.service'
+import { getAverageRating } from '@/helpers/get-average-ratings'
 import { ApiListResponseDto } from '@/types/api-responses'
 
 import { CompaniesService } from '../companies/companies.service'
@@ -124,7 +125,7 @@ export class MoviesService {
   ) {
     try {
       const {
-        casts: { cast, crew },
+        casts: { cast: casts, crew },
         production_companies,
         genres,
         ratings,
@@ -132,41 +133,22 @@ export class MoviesService {
 
       const groupedPromises: Promise<void | null>[] = []
 
-      await Promise.all(
-        cast.map((cast) =>
-          this.peopleService.addPersonToMovie(
-            {
-              name: cast.name,
-              tmdbId: cast.id,
-              gender: cast.gender,
-              profilePath: cast.profile_path,
-            },
-            {
-              movieId,
-              role: cast.gender === 1 ? 'ACTRESS' : 'ACTOR',
-              character: cast.character,
-              order: cast.order,
-            },
-          ),
-        ),
-      )
-
-      // for await (const item of cast) {
-      //   await this.peopleService.addPersonToMovie(
-      //     {
-      //       name: item.name,
-      //       tmdbId: item.id,
-      //       gender: item.gender,
-      //       profilePath: item.profile_path,
-      //     },
-      //     {
-      //       movieId,
-      //       role: item.gender === 1 ? 'ACTRESS' : 'ACTOR',
-      //       character: item.character,
-      //       order: item.order,
-      //     },
-      //   )
-      // }
+      for (const cast of casts) {
+        await this.peopleService.addPersonToMovie(
+          {
+            name: cast.name,
+            tmdbId: cast.id,
+            gender: cast.gender,
+            profilePath: cast.profile_path,
+          },
+          {
+            movieId,
+            role: cast.gender === 1 ? 'ACTRESS' : 'ACTOR',
+            character: cast.character,
+            order: cast.order,
+          },
+        )
+      }
 
       const onlyValidCrew = crew.filter(
         (c) => c.job === 'Director' || c.job === 'Screenplay',
@@ -233,6 +215,15 @@ export class MoviesService {
         ),
       )
 
+      await this.prisma.movie.update({
+        where: {
+          id: movieId,
+        },
+        data: {
+          averageRating: getAverageRating(ratings),
+        },
+      })
+
       await Promise.all(groupedPromises)
     } catch (error) {
       throw new InternalServerErrorException()
@@ -240,25 +231,32 @@ export class MoviesService {
   }
 
   async updateMovieRating(movieId: string, data: MovieRatingsDto[]) {
-    data.forEach(async (item) => {
-      await this.prisma.ratingsOnMovies.upsert({
-        create: {
-          ratingSource: item.source,
-          value: item.value,
-          movieId,
-        },
-        update: {
-          ratingSource: item.source,
-          value: item.value,
-          movieId,
-        },
-        where: {
-          ratingSource_movieId: {
-            movieId,
+    await Promise.all(
+      data.map((item) =>
+        this.prisma.ratingsOnMovies.upsert({
+          create: {
             ratingSource: item.source,
+            value: item.value,
+            movieId,
           },
-        },
-      })
+          update: {},
+          where: {
+            ratingSource_movieId: {
+              movieId,
+              ratingSource: item.source,
+            },
+          },
+        }),
+      ),
+    )
+
+    await this.prisma.movie.update({
+      where: {
+        id: movieId,
+      },
+      data: {
+        averageRating: getAverageRating(data),
+      },
     })
   }
 }

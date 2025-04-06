@@ -17,6 +17,8 @@ export const SortByOptionsSchema = z
     'rating_rotten.desc',
     'rating_user.asc',
     'rating_user.desc',
+    'average_rating.desc',
+    'average_rating.asc',
   ])
   .default('watched_date.desc')
 
@@ -26,6 +28,7 @@ export const queryStringSchema = z
     genre_id: z.string().uuid().optional(),
     person_id: z.string().uuid().optional(),
     company_id: z.string().uuid().optional(),
+    tag_id: z.string().uuid().optional(),
     release_year: z.string().optional(),
     watched_year: z.string().optional(),
     query: z.string().optional(),

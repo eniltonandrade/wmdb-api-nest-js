@@ -27,7 +27,8 @@ export const yearStatsQueryParamsSchema = z.object({
   query: yearValidationSchema,
   selected_rating: z
     .enum(['IMDB', 'TMDB', 'ROTTEN_TOMATOES', 'METACRITIC'])
-    .optional(),
+    .optional()
+    .nullable(),
   page: z.coerce.number().min(1).default(1),
 })
 

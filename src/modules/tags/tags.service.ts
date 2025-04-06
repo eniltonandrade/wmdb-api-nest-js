@@ -11,16 +11,33 @@ import { PrismaService } from '@/database/prisma/prisma.service'
 export class TagsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: Prisma.TagUncheckedCreateInput) {
+  async create({ colorHex, name, userId }: Prisma.TagUncheckedCreateInput) {
     return await this.prisma.tag.create({
-      data,
+      select: {
+        id: true,
+        name: true,
+        colorHex: true,
+      },
+      data: {
+        colorHex,
+        userId,
+        name: name.trim(),
+      },
     })
   }
 
   async findAll(userId: string) {
     return await this.prisma.tag.findMany({
+      select: {
+        id: true,
+        name: true,
+        colorHex: true,
+      },
       where: {
         userId,
+      },
+      orderBy: {
+        name: 'asc',
       },
     })
   }

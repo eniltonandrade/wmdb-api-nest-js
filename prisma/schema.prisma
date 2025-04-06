@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider        = "prisma-kysely"
+  provider        = "prisma-client-js"
   previewFeatures = ["typedSql"]
 }
 
@@ -28,7 +28,7 @@ model User {
   email           String        @unique
   passwordHash    String?       @map("password_hash")
   avatarUrl       String?       @map("avatar_url")
-  preferredRating RatingSource? @default(TMDB) @map("preferred_rating")
+  preferredRating RatingSource? @map("preferred_rating")
   refreshToken    String?       @map("refresh_token")
 
   createdAt    DateTime  @default(now()) @map("created_at")
@@ -81,6 +81,7 @@ model Movie {
   runtime       Int?
   imdbId        String   @unique @map("imdb_id")
   tmdbId        Int      @unique @map("tmdb_id")
+  averageRating Float    @default(0) @map("average_rating")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 

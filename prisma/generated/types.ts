@@ -92,6 +92,7 @@ export type Movie = {
     runtime: number | null;
     imdb_id: string;
     tmdb_id: number;
+    average_rating: Generated<number>;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
 };

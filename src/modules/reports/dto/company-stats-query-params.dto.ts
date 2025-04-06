@@ -12,7 +12,8 @@ export const companiesStatsQueryParamsSchema = z.object({
   query: z.string().optional(),
   selected_rating: z
     .enum(['IMDB', 'TMDB', 'ROTTEN_TOMATOES', 'METACRITIC'])
-    .optional(),
+    .optional()
+    .nullable(),
   page: z.coerce.number().min(1).default(1),
 })
 

@@ -20,23 +20,17 @@ export class ReportsService {
   ) {}
 
   async getUserHistoryReport(userId: string) {
-    const user = await this.usersService.getPreferredRatingSource(userId)
-
-    const selectedRatingSource: RatingSource = user?.preferredRating || 'IMDB'
-
     const result = await this.kysely
-      .selectFrom(['histories', 'movie_ratings', 'movies'])
+      .selectFrom(['histories', 'movies'])
       .select(({ fn }) => [
         fn.count<number>('histories.id').as('total'),
-        sql<number>`CAST(AVG(movie_ratings.value)::numeric AS decimal(4,1))`.as(
+        fn.sum<number>('movies.runtime').as('totalRuntime'),
+        sql<number>`CAST(AVG(movies.average_rating)::numeric AS decimal(4,1))`.as(
           'average',
         ),
-        fn.sum<number>('movies.runtime').as('totalRuntime'),
       ])
       .whereRef('movies.id', '=', 'histories.movie_id')
-      .whereRef('histories.movie_id', '=', 'movie_ratings.movie_id')
       .where('user_id', '=', userId)
-      .where('movie_ratings.rating_source', '=', selectedRatingSource)
       .executeTakeFirst()
 
     return {
@@ -59,28 +53,47 @@ export class ReportsService {
     const sortOrder: OrderByDirectionExpression =
       direction as OrderByDirectionExpression
 
-    const selectedRatingSource: RatingSource =
-      selected_rating || user?.preferredRating || 'IMDB'
+    const selectedRatingSource = selected_rating || 'AVERAGE'
+
+    const averageBy =
+      selectedRatingSource === 'AVERAGE'
+        ? 'movies.average_rating'
+        : 'movie_ratings.value'
+
+    const ratingSource =
+      selectedRatingSource === 'AVERAGE'
+        ? (user?.preferredRating as RatingSource)
+        : selectedRatingSource
 
     const dbQuery = this.kysely
-      .selectFrom(['histories', 'movie_ratings', 'movie_person', 'people'])
+      .selectFrom([
+        'histories',
+        'movie_ratings',
+        'movie_person',
+        'people',
+        'movies',
+      ])
       .select(({ fn }) => [
         'people.id',
         'people.tmdb_id',
         'people.name',
         'people.profile_path',
         fn.count<number>('histories.id').as('count'),
-        sql<number>`CAST(AVG(movie_ratings.value)::numeric AS decimal(4,1))`.as(
-          'average',
-        ),
+        fn.avg<number>(averageBy).as('average'),
       ])
       .whereRef('movie_person.movie_id', '=', 'histories.movie_id')
       .whereRef('histories.movie_id', '=', 'movie_ratings.movie_id')
       .whereRef('movie_person.person_id', '=', 'people.id')
+      .whereRef('movie_person.movie_id', '=', 'movies.id')
       .where('user_id', '=', userId)
       .$if(!!query, (qb) => qb.where('people.name', 'ilike', `%${query}%`))
       .$if(role === 'cast', (qb) =>
-        qb.where('movie_person.role', 'in', ['ACTOR', 'ACTRESS']),
+        qb.where((eb) =>
+          eb.and([
+            eb('movie_person.role', 'in', ['ACTOR', 'ACTRESS']),
+            eb('movie_person.order', '<=', 20),
+          ]),
+        ),
       )
       .$if(role === 'director', (qb) =>
         qb.where('movie_person.role', 'in', ['DIRECTOR']),
@@ -93,14 +106,14 @@ export class ReportsService {
       )
       .$if(!!id, (qb) => qb.where('person_id', '=', id!))
       .$if(!!tmdb_id, (qb) => qb.where('people.tmdb_id', '=', tmdb_id!))
-      .where('movie_ratings.rating_source', '=', selectedRatingSource)
+      .where('movie_ratings.rating_source', '=', ratingSource)
       .$if(!!gender, (qb) => qb.where('people.gender', '=', gender!))
       .$if(column === 'average', (qb) =>
         qb.orderBy('average', sortOrder).having('people.id', '>', '2'),
       )
       .$if(column === 'count', (qb) => qb.orderBy('count', sortOrder))
       .$if(column === 'average', (qb) =>
-        qb.having((eb) => eb.fn.count('histories.id'), '>', 2),
+        qb.having((eb) => eb.fn.count('histories.id'), '>', 5),
       )
       .groupBy([
         'people.id',
@@ -119,12 +132,18 @@ export class ReportsService {
     const results = await dbQuery.offset(skip).limit(take).execute()
 
     if (results.length === 1 && id && tmdb_id && !query) {
-      return results[0]
+      return {
+        ...results[0],
+        average: Number(results[0].average.toFixed(1)),
+      }
     }
 
     return {
       total: totalCount?.total || 0,
-      results,
+      results: results.map((result) => ({
+        ...result,
+        average: Number(result.average.toFixed(2)),
+      })),
     }
   }
 
@@ -141,27 +160,41 @@ export class ReportsService {
     const sortOrder: OrderByDirectionExpression =
       direction as OrderByDirectionExpression
 
-    const selectedRatingSource: RatingSource =
-      selected_rating || user?.preferredRating || 'IMDB'
+    const selectedRatingSource = selected_rating || 'AVERAGE'
+
+    const averageBy =
+      selectedRatingSource === 'AVERAGE'
+        ? 'movies.average_rating'
+        : 'movie_ratings.value'
+
+    const ratingSource =
+      selectedRatingSource === 'AVERAGE'
+        ? (user?.preferredRating as RatingSource)
+        : selectedRatingSource
 
     const dbQuery = this.kysely
-      .selectFrom(['histories', 'movie_ratings', 'movie_genres', 'genres'])
+      .selectFrom([
+        'histories',
+        'movie_ratings',
+        'movie_genres',
+        'genres',
+        'movies',
+      ])
       .select(({ fn }) => [
         'genres.id',
         'genres.tmdb_id',
         'genres.name',
         fn.count<number>('histories.id').as('count'),
-        sql<number>`CAST(AVG(movie_ratings.value)::numeric AS decimal(4,1))`.as(
-          'average',
-        ),
+        fn.avg<number>(averageBy).as('average'),
       ])
       .whereRef('movie_genres.movie_id', '=', 'histories.movie_id')
       .whereRef('histories.movie_id', '=', 'movie_ratings.movie_id')
       .whereRef('movie_genres.genre_id', '=', 'genres.id')
+      .whereRef('movie_genres.movie_id', '=', 'movies.id')
       .where('user_id', '=', userId)
       .$if(!!id, (qb) => qb.where('genre_id', '=', id!))
       .$if(!!tmdb_id, (qb) => qb.where('genres.tmdb_id', '=', tmdb_id!))
-      .where('movie_ratings.rating_source', '=', selectedRatingSource)
+      .where('movie_ratings.rating_source', '=', ratingSource)
       .$if(column === 'average', (qb) => qb.orderBy('average', sortOrder))
       .$if(column === 'count', (qb) => qb.orderBy('count', sortOrder))
       .groupBy(['genres.id', 'genres.tmdb_id', 'genres.name'])
@@ -176,12 +209,18 @@ export class ReportsService {
     const results = await dbQuery.offset(skip).limit(take).execute()
 
     if (results.length === 1) {
-      return results[0]
+      return {
+        ...results[0],
+        average: Number(results[0].average.toFixed(1)),
+      }
     }
 
     return {
       total: totalCount?.total || 0,
-      results,
+      results: results.map((result) => ({
+        ...result,
+        average: Number(result.average.toFixed(1)),
+      })),
     }
   }
 
@@ -201,8 +240,17 @@ export class ReportsService {
     const sortOrder: OrderByDirectionExpression =
       direction as OrderByDirectionExpression
 
-    const selectedRatingSource: RatingSource =
-      selected_rating || user?.preferredRating || 'IMDB'
+    const selectedRatingSource = selected_rating || 'AVERAGE'
+
+    const averageBy =
+      selectedRatingSource === 'AVERAGE'
+        ? 'movies.average_rating'
+        : 'movie_ratings.value'
+
+    const ratingSource =
+      selectedRatingSource === 'AVERAGE'
+        ? (user?.preferredRating as RatingSource)
+        : selectedRatingSource
 
     const dbQuery = this.kysely
       .selectFrom([
@@ -210,45 +258,60 @@ export class ReportsService {
         'movie_ratings',
         'movie_companies',
         'companies',
+        'movies',
       ])
       .select(({ fn }) => [
         'companies.id',
         'companies.tmdb_id',
         'companies.name',
+        'companies.logo_path',
         fn.count<number>('histories.id').as('count'),
-        sql<number>`CAST(AVG(movie_ratings.value)::numeric AS decimal(4,1))`.as(
-          'average',
-        ),
+        fn.avg<number>(averageBy).as('average'),
       ])
       .whereRef('movie_companies.movie_id', '=', 'histories.movie_id')
       .whereRef('histories.movie_id', '=', 'movie_ratings.movie_id')
       .whereRef('movie_companies.company_id', '=', 'companies.id')
+      .whereRef('movie_companies.movie_id', '=', 'movies.id')
       .$if(!!query, (qb) => qb.where('companies.name', 'ilike', `%${query}%`))
       .where('user_id', '=', userId)
       .$if(!!id, (qb) => qb.where('company_id', '=', id!))
       .$if(!!tmdb_id, (qb) => qb.where('companies.tmdb_id', '=', tmdb_id!))
-      .where('movie_ratings.rating_source', '=', selectedRatingSource)
+      .where('movie_ratings.rating_source', '=', ratingSource)
       .$if(column === 'average', (qb) => qb.orderBy('average', sortOrder))
       .$if(column === 'count', (qb) => qb.orderBy('count', sortOrder))
       .$if(column === 'name', (qb) => qb.orderBy('companies.name', sortOrder))
-      .groupBy(['companies.id', 'companies.tmdb_id', 'companies.name'])
+      .$if(column === 'average', (qb) =>
+        qb.having((eb) => eb.fn.count('histories.id'), '>', 2),
+      )
+      .groupBy([
+        'companies.id',
+        'companies.tmdb_id',
+        'companies.name',
+        'companies.logo_path',
+      ])
 
     const subQuery = dbQuery.as('sub_query')
 
-    const totalCount2 = await this.kysely
+    const totalCount = await this.kysely
       .selectFrom(subQuery)
       .select(({ fn }) => fn.countAll<number>().as('total'))
       .executeTakeFirst()
 
     const results = await dbQuery.offset(skip).limit(take).execute()
 
-    if (results.length === 1) {
-      return results[0]
+    if (results.length === 1 && !query) {
+      return {
+        ...results[0],
+        average: Number(results[0].average.toFixed(1)),
+      }
     }
 
     return {
-      total: totalCount2?.total || 0,
-      results,
+      total: totalCount?.total || 0,
+      results: results.map((result) => ({
+        ...result,
+        average: Number(result.average.toFixed(1)),
+      })),
     }
   }
 
@@ -265,22 +328,29 @@ export class ReportsService {
     const sortOrder: OrderByDirectionExpression =
       direction as OrderByDirectionExpression
 
-    const selectedRatingSource: RatingSource =
-      selected_rating || user?.preferredRating || 'IMDB'
+    const selectedRatingSource = selected_rating || 'AVERAGE'
+
+    const averageBy =
+      selectedRatingSource === 'AVERAGE'
+        ? 'movies.average_rating'
+        : 'movie_ratings.value'
+
+    const ratingSource =
+      selectedRatingSource === 'AVERAGE'
+        ? (user?.preferredRating as RatingSource)
+        : selectedRatingSource
 
     const dbQuery = this.kysely
       .selectFrom(['histories', 'movies', 'movie_ratings'])
       .select(({ fn }) => [
         sql<number>`extract(year from histories.date)`.as('year'),
         fn.count<number>('histories.id').as('count'),
-        sql<number>`CAST(AVG(movie_ratings.value)::numeric AS decimal(4,1))`.as(
-          'average',
-        ),
+        fn.avg<number>(averageBy).as('average'),
       ])
       .whereRef('histories.movie_id', '=', 'movies.id')
       .whereRef('histories.movie_id', '=', 'movie_ratings.movie_id')
       .where('user_id', '=', userId)
-      .where('movie_ratings.rating_source', '=', selectedRatingSource)
+      .where('movie_ratings.rating_source', '=', ratingSource)
       .$if(!!query, (qb) =>
         qb
           .where('histories.date', '>=', new Date(`${query}-01-01`))
@@ -302,7 +372,7 @@ export class ReportsService {
 
     const subQuery = dbQuery.as('sub_query')
 
-    const totalCount2 = await this.kysely
+    const totalCount = await this.kysely
       .selectFrom(subQuery)
       .select(({ fn }) => fn.countAll<number>().as('total'))
       .executeTakeFirst()
@@ -310,12 +380,18 @@ export class ReportsService {
     const results = await dbQuery.offset(skip).limit(take).execute()
 
     if (results.length === 1 && !query) {
-      return results[0]
+      return {
+        ...results[0],
+        average: Number(results[0].average.toFixed(1)),
+      }
     }
 
     return {
-      total: totalCount2?.total || 0,
-      results,
+      total: totalCount?.total || 0,
+      results: results.map((result) => ({
+        ...result,
+        average: Number(result.average.toFixed(1)),
+      })),
     }
   }
 
@@ -332,22 +408,29 @@ export class ReportsService {
     const sortOrder: OrderByDirectionExpression =
       direction as OrderByDirectionExpression
 
-    const selectedRatingSource: RatingSource =
-      selected_rating || user?.preferredRating || 'IMDB'
+    const selectedRatingSource = selected_rating || 'AVERAGE'
+
+    const averageBy =
+      selectedRatingSource === 'AVERAGE'
+        ? 'movies.average_rating'
+        : 'movie_ratings.value'
+
+    const ratingSource =
+      selectedRatingSource === 'AVERAGE'
+        ? (user?.preferredRating as RatingSource)
+        : selectedRatingSource
 
     const dbQuery = this.kysely
       .selectFrom(['histories', 'movies', 'movie_ratings'])
       .select(({ fn }) => [
         sql<number>`extract(year from movies.release_date)`.as('year'),
         fn.count<number>('histories.id').as('count'),
-        sql<number>`CAST(AVG(movie_ratings.value)::numeric AS decimal(4,1))`.as(
-          'average',
-        ),
+        fn.avg<number>(averageBy).as('average'),
       ])
       .whereRef('histories.movie_id', '=', 'movies.id')
       .whereRef('histories.movie_id', '=', 'movie_ratings.movie_id')
       .where('user_id', '=', userId)
-      .where('movie_ratings.rating_source', '=', selectedRatingSource)
+      .where('movie_ratings.rating_source', '=', ratingSource)
       .$if(!!query, (qb) =>
         qb
           .where('movies.release_date', '>=', new Date(`${query}-01-01`))
@@ -365,7 +448,7 @@ export class ReportsService {
 
     const subQuery = dbQuery.as('sub_query')
 
-    const totalCount2 = await this.kysely
+    const totalCount = await this.kysely
       .selectFrom(subQuery)
       .select(({ fn }) => fn.countAll<number>().as('total'))
       .executeTakeFirst()
@@ -373,12 +456,18 @@ export class ReportsService {
     const results = await dbQuery.offset(skip).limit(take).execute()
 
     if (results.length === 1 && !query) {
-      return results[0]
+      return {
+        ...results[0],
+        average: Number(results[0].average.toFixed(1)),
+      }
     }
 
     return {
-      total: totalCount2?.total || 0,
-      results,
+      total: totalCount?.total || 0,
+      results: results.map((result) => ({
+        ...result,
+        average: Number(result.average.toFixed(1)),
+      })),
     }
   }
 }

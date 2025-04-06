@@ -12,6 +12,7 @@ export const userMovieHistory = z.object({
     posterPath: z.string().nullable(),
     releaseDate: z.string(),
     title: z.string(),
+    averageRating: z.number(),
     tmdbId: z.number(),
     ratings: z.array(
       z.object({
