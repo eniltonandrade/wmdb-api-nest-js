@@ -1,11 +1,23 @@
-import { ConflictException, Injectable } from '@nestjs/common'
+import {
+  ConflictException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 
 import { PrismaService } from '@/database/prisma/prisma.service'
 
+import { TagsService } from '../tags/tags.service'
+
 @Injectable()
 export class HistoriesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => TagsService))
+    private readonly tagsService: TagsService,
+  ) {}
 
   async create(data: Prisma.HistoryUncheckedCreateInput) {
     const alreadyExists = await this.prisma.history.findUnique({
@@ -22,21 +34,51 @@ export class HistoriesService {
   }
 
   async findOneByUserAndMovie(userId: string, movieId: string) {
-    return await this.prisma.history.findUnique({
+    const convertedNumber = Number(movieId)
+    const tmdbId = isNaN(convertedNumber) ? 0 : convertedNumber
+
+    const history = await this.prisma.history.findFirst({
       select: {
         id: true,
+        movieId: true,
         date: true,
         review: true,
         rating: true,
-        tags: true,
-      },
-      where: {
-        movieId_userId: {
-          movieId,
-          userId,
+        tags: {
+          select: {
+            tag: {
+              select: {
+                id: true,
+                colorHex: true,
+                name: true,
+              },
+            },
+          },
         },
       },
+      where: {
+        userId,
+        OR: [
+          {
+            movieId,
+          },
+          {
+            movie: {
+              tmdbId,
+            },
+          },
+        ],
+      },
     })
+
+    if (!history) {
+      throw new NotFoundException()
+    }
+
+    return {
+      ...history,
+      tags: history?.tags.map((t) => t.tag),
+    }
   }
 
   update(id: string, data: Prisma.HistoryUpdateInput) {
@@ -48,11 +90,38 @@ export class HistoriesService {
     })
   }
 
+  findOne(id: string) {
+    return this.prisma.history.findUnique({
+      where: {
+        id,
+      },
+    })
+  }
+
   async remove(historyId: string) {
     return await this.prisma.history.delete({
       where: {
         id: historyId,
       },
+    })
+  }
+
+  async manageHistoryTags(userId: string, historyId: string, tagIds: string[]) {
+    const existingTags = await this.tagsService.findMany(userId, tagIds)
+
+    const existingTagIds = existingTags.map((tag) => tag.id)
+
+    await this.prisma.tagsOnHistory.deleteMany({
+      where: { historyId },
+    })
+
+    // Create new tag connections
+    await this.prisma.tagsOnHistory.createMany({
+      data: existingTagIds.map((tagId) => ({
+        historyId,
+        tagId,
+      })),
+      skipDuplicates: true,
     })
   }
 }

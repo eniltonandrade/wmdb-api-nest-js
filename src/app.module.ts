@@ -15,6 +15,7 @@ import { MoviesModule } from './modules/movies/movies.module'
 import { PeopleModule } from './modules/people/people.module'
 import { ReportsModule } from './modules/reports/reports.module'
 import { UsersModule } from './modules/users/users.module'
+import { TagsModule } from './modules/tags/tags.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { UsersModule } from './modules/users/users.module'
     CompaniesModule,
     HistoriesModule,
     ReportsModule,
+    TagsModule,
   ],
   controllers: [],
   providers: [

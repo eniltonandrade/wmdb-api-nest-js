@@ -32,9 +32,19 @@ export class MoviesService {
   }
 
   async get(movieId: string): Promise<Movie> {
-    const movie = await this.prisma.movie.findUnique({
+    const convertedNumber = Number(movieId)
+    const tmdbId = isNaN(convertedNumber) ? 0 : convertedNumber
+
+    const movie = await this.prisma.movie.findFirst({
       where: {
-        id: movieId,
+        OR: [
+          {
+            id: movieId,
+          },
+          {
+            tmdbId,
+          },
+        ],
       },
     })
 
@@ -122,41 +132,41 @@ export class MoviesService {
 
       const groupedPromises: Promise<void | null>[] = []
 
-      // await Promise.all(
-      //   cast.map((cast) =>
-      //     this.peopleService.addPersonToMovie(
-      //       {
-      //         name: cast.name,
-      //         tmdbId: cast.id,
-      //         gender: cast.gender,
-      //         profilePath: cast.profile_path,
-      //       },
-      //       {
-      //         movieId,
-      //         role: cast.gender === 1 ? 'ACTRESS' : 'ACTOR',
-      //         character: cast.character,
-      //         order: cast.order,
-      //       },
-      //     ),
-      //   ),
-      // )
+      await Promise.all(
+        cast.map((cast) =>
+          this.peopleService.addPersonToMovie(
+            {
+              name: cast.name,
+              tmdbId: cast.id,
+              gender: cast.gender,
+              profilePath: cast.profile_path,
+            },
+            {
+              movieId,
+              role: cast.gender === 1 ? 'ACTRESS' : 'ACTOR',
+              character: cast.character,
+              order: cast.order,
+            },
+          ),
+        ),
+      )
 
-      for await (const item of cast) {
-        await this.peopleService.addPersonToMovie(
-          {
-            name: item.name,
-            tmdbId: item.id,
-            gender: item.gender,
-            profilePath: item.profile_path,
-          },
-          {
-            movieId,
-            role: item.gender === 1 ? 'ACTRESS' : 'ACTOR',
-            character: item.character,
-            order: item.order,
-          },
-        )
-      }
+      // for await (const item of cast) {
+      //   await this.peopleService.addPersonToMovie(
+      //     {
+      //       name: item.name,
+      //       tmdbId: item.id,
+      //       gender: item.gender,
+      //       profilePath: item.profile_path,
+      //     },
+      //     {
+      //       movieId,
+      //       role: item.gender === 1 ? 'ACTRESS' : 'ACTOR',
+      //       character: item.character,
+      //       order: item.order,
+      //     },
+      //   )
+      // }
 
       const onlyValidCrew = crew.filter(
         (c) => c.job === 'Director' || c.job === 'Screenplay',

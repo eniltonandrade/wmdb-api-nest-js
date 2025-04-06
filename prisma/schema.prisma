@@ -229,6 +229,7 @@ model Tag {
   id        String   @id @default(uuid())
   name      String
   userId    String   @map("user_id")
+  colorHex  String   @map("color_hex")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -258,8 +259,8 @@ model History {
 }
 
 model TagsOnHistory {
-  historyId String
-  tagId     String
+  historyId String @map("history_id")
+  tagId     String @map("tag_id")
 
   history History @relation(fields: [historyId], references: [id], onDelete: Cascade)
   tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)

@@ -13,7 +13,11 @@ import { ZodValidationPipe } from 'nestjs-zod'
 
 import { CurrentUser } from '../auth/current-user.decorator'
 import { UserPayload } from '../auth/jwt.strategy'
-import { CreateHistoryDto } from './dto/create-history.dto'
+import { CreateHistoryDto, createHistorySchema } from './dto/create-history.dto'
+import {
+  ManageHistoryTagsDto,
+  manageHistoryTagsSchema,
+} from './dto/manage-history-tags.dto'
 import { queryStringDto, queryStringSchema } from './dto/query-histories.dto'
 import { UpdateHistoryDto } from './dto/update-history.dto'
 import { HistoriesService } from './histories.service'
@@ -29,7 +33,7 @@ export class HistoriesController {
 
   @Post()
   async create(
-    @Body() body: CreateHistoryDto,
+    @Body(new ZodValidationPipe(createHistorySchema)) body: CreateHistoryDto,
     @CurrentUser() user: UserPayload,
   ) {
     const { date, movieId, rating, review } = body
@@ -69,5 +73,17 @@ export class HistoriesController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.historiesService.remove(id)
+  }
+
+  @Post('/:id/tags')
+  async manageHistoryTags(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(manageHistoryTagsSchema))
+    body: ManageHistoryTagsDto,
+    @CurrentUser() user: UserPayload,
+  ) {
+    const { tagIds } = body
+
+    return await this.historiesService.manageHistoryTags(user.sub, id, tagIds)
   }
 }

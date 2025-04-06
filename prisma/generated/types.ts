@@ -126,12 +126,13 @@ export type Tag = {
     id: string;
     name: string;
     user_id: string;
+    color_hex: string;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
 };
 export type TagsOnHistory = {
-    historyId: string;
-    tagId: string;
+    history_id: string;
+    tag_id: string;
 };
 export type Token = {
     id: string;
