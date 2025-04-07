@@ -164,7 +164,7 @@ export class AuthService {
 
   private async updateRefreshToken(userId: string, refreshToken: string) {
     const hashedToken = await argon2.hash(refreshToken)
-    console.log('hashedToken:', hashedToken)
+
     await this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: hashedToken },

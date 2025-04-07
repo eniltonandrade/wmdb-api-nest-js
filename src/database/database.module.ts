@@ -1,5 +1,5 @@
 import { Logger, Module } from '@nestjs/common'
-import { LogEvent, PostgresDialect } from 'kysely'
+import { CamelCasePlugin, LogEvent, PostgresDialect } from 'kysely'
 import { KyselyModule } from 'nestjs-kysely'
 import { Pool, types } from 'pg'
 
@@ -38,6 +38,7 @@ types.setTypeParser(types.builtins.INT8, (val) => Number(val))
             ssl: false,
           }),
         }),
+        plugins: [new CamelCasePlugin()],
       }),
     }),
   ],

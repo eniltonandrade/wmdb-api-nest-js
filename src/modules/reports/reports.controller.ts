@@ -1,5 +1,5 @@
-import { Controller, Get, Query } from '@nestjs/common'
-import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
+import { Controller, Get, Param, Query } from '@nestjs/common'
+import { ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger'
 import { ZodValidationPipe } from 'nestjs-zod'
 
 import { CurrentUser } from '../auth/current-user.decorator'
@@ -12,6 +12,10 @@ import {
   GenreStatsQueryParamsDto,
   genreStatsQueryParamsSchema,
 } from './dto/genre-stats-query-params.dto'
+import {
+  PeopleRankingQueryParamsDto,
+  peopleRankingQueryParamsSchema,
+} from './dto/people-ranking-query-params.dto'
 import {
   PersonStatsQueryParamsDto,
   personStatsQueryParamsSchema,
@@ -102,5 +106,32 @@ export class ReportsController {
     query: YearStatsQueryParamsDto,
   ) {
     return await this.reportsService.getReleaseYearStats(user.sub, query)
+  }
+
+  @Get('/cast-ranking')
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'gender', required: false, type: String })
+  @ApiQuery({ name: 'role', required: false, type: Number })
+  async getRanking(
+    @Query(new ZodValidationPipe(peopleRankingQueryParamsSchema))
+    query: PeopleRankingQueryParamsDto,
+    @CurrentUser()
+    user: UserPayload,
+  ) {
+    return await this.reportsService.getCastRankingForUser(user.sub, query)
+  }
+
+  @Get('/retrospective/:year')
+  @ApiParam({
+    name: 'year',
+    description: 'Year to get retrospective for',
+    type: Number,
+    required: true,
+  })
+  async getUserRetrospective(
+    @CurrentUser() user: UserPayload,
+    @Param('year') year: string,
+  ) {
+    return await this.reportsService.getUserRetrospective(user.sub, +year)
   }
 }

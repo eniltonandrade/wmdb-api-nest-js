@@ -148,7 +148,7 @@ export type User = {
     email: string;
     password_hash: string | null;
     avatar_url: string | null;
-    preferred_rating: Generated<RatingSource | null>;
+    preferred_rating: RatingSource | null;
     refresh_token: string | null;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;

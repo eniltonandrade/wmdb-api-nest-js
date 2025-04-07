@@ -9,11 +9,9 @@ import {
   MOVIE_FILTER_COLUMNS,
   PAGE_SIZE,
 } from '@/common/constants/app.constants'
-import { ApiListResponseDto } from '@/types/api-responses'
 
 import { UsersService } from '../users/users.service'
 import { queryStringDto } from './dto/query-histories.dto'
-import { UserMovieHistoryDto } from './dto/user-movie-history.dto'
 
 type PossibleOrderBy<
   Tables extends Record<string, unknown>,
@@ -33,10 +31,7 @@ export class UserHistoriesService {
     private usersService: UsersService,
   ) {}
 
-  async fetchUserHistory(
-    userId: string,
-    params: queryStringDto,
-  ): Promise<ApiListResponseDto<UserMovieHistoryDto>> {
+  async fetchUserHistory(userId: string, params: queryStringDto) {
     try {
       const {
         page,
@@ -169,28 +164,46 @@ export class UserHistoriesService {
         .executeTakeFirst()
 
       const results = await dbQuery
-        .selectAll(['histories', 'movies'])
         .select((eb) => [
           'histories.id',
-          jsonArrayFrom(
+          'histories.date',
+          'histories.rating',
+          'histories.review',
+          jsonObjectFrom(
             eb
-              .selectFrom('movie_ratings')
-              .select(['movie_ratings.rating_source', 'movie_ratings.value'])
-              .whereRef('movie_ratings.movie_id', '=', 'histories.movie_id'),
-          ).as('ratings'),
+              .selectFrom('movies')
+              .selectAll()
+              .select((eb) => [
+                'histories.id',
+                jsonArrayFrom(
+                  eb
+                    .selectFrom('movie_ratings')
+                    .select([
+                      'movie_ratings.rating_source',
+                      'movie_ratings.value',
+                    ])
+                    .whereRef('movie_ratings.movie_id', '=', 'movies.id'),
+                ).as('ratings'),
+              ])
+              .$if(!!person_id, (qb) =>
+                qb.select((eb) => [
+                  'histories.id',
+                  jsonObjectFrom(
+                    eb
+                      .selectFrom('movie_person')
+                      .select(['movie_person.character', 'movie_person.role'])
+                      .whereRef(
+                        'movie_person.movie_id',
+                        '=',
+                        'histories.movie_id',
+                      )
+                      .where('movie_person.person_id', '=', person_id!),
+                  ).as('credits'),
+                ]),
+              )
+              .whereRef('movies.id', '=', 'histories.movie_id'),
+          ).as('movie'),
         ])
-        .$if(!!person_id, (qb) =>
-          qb.select((eb) => [
-            'histories.id',
-            jsonObjectFrom(
-              eb
-                .selectFrom('movie_person')
-                .select(['movie_person.character', 'movie_person.role'])
-                .whereRef('movie_person.movie_id', '=', 'histories.movie_id')
-                .where('movie_person.person_id', '=', person_id!),
-            ).as('credits'),
-          ]),
-        )
         .orderBy(orderBy, sortOrder)
         .groupBy([
           'histories.id',
@@ -203,32 +216,12 @@ export class UserHistoriesService {
         .offset(skip)
         .execute()
 
-      const mappedResults: UserMovieHistoryDto[] = results.map((record) => ({
-        id: record.id,
-        date: record.date,
-        rating: record.rating,
-        movie: {
-          id: record.movie_id,
-          title: record.title,
-          releaseDate: record.release_date.toISOString(),
-          posterPath: record.poster_path,
-          backdropPath: record.backdrop_path,
-          averageRating: record.average_rating,
-          imdbId: record.imdb_id,
-          tmdbId: record.tmdb_id,
-          ratings: record.ratings.map((rating) => ({
-            ratingSource: rating.rating_source,
-            value: rating.value,
-          })),
-          credits: record.credits,
-        },
-      }))
-
       return {
         total: totalCount?.total || 0,
-        results: mappedResults,
+        results,
       }
     } catch (error) {
+      console.log('Error fetching user history:', error)
       return { total: 0, results: [] }
     }
   }
