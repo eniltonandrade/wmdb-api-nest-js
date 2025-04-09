@@ -23,7 +23,7 @@ import { UpdateHistoryDto } from './dto/update-history.dto'
 import { HistoriesService } from './histories.service'
 import { UserHistoriesService } from './user-histories.service'
 
-@Controller('user/histories')
+@Controller('me/history')
 @ApiBearerAuth()
 export class HistoriesController {
   constructor(
@@ -31,7 +31,7 @@ export class HistoriesController {
     private readonly userHistoriesService: UserHistoriesService,
   ) {}
 
-  @Post()
+  @Post('/movies')
   async create(
     @Body(new ZodValidationPipe(createHistorySchema)) body: CreateHistoryDto,
     @CurrentUser() user: UserPayload,
@@ -47,12 +47,15 @@ export class HistoriesController {
     })
   }
 
-  @Get('/movie/:movieId')
-  findOne(@CurrentUser() user: UserPayload, @Param('movieId') movieId: string) {
-    return this.historiesService.findOneByUserAndMovie(user.sub, movieId)
+  @Get('/movies/:movieId')
+  async findOne(
+    @CurrentUser() user: UserPayload,
+    @Param('movieId') movieId: string,
+  ) {
+    return await this.historiesService.findOneByUserAndMovie(user.sub, movieId)
   }
 
-  @Get()
+  @Get('/movies')
   fetchUserHistory(
     @CurrentUser() user: UserPayload,
     @Query(new ZodValidationPipe(queryStringSchema)) query: queryStringDto,

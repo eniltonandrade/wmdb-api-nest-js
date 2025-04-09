@@ -14,7 +14,7 @@ import { PersonStatsQueryParamsDto } from './dto/person-stats-query-params.dto'
 import { YearStatsQueryParamsDto } from './dto/year-stats-query-params.dto'
 
 @Injectable()
-export class ReportsService {
+export class InsightsService {
   constructor(
     @InjectKysely() private readonly kysely: Kysely<DB>,
     private usersService: UsersService,
@@ -134,12 +134,7 @@ export class ReportsService {
       .where('movie_ratings.rating_source', '=', ratingSource)
       .$if(!!query, (qb) => qb.where('people.name', 'ilike', `%${query}%`))
       .$if(role === 'cast', (qb) =>
-        qb.where((eb) =>
-          eb.and([
-            eb('movie_person.role', 'in', ['ACTOR', 'ACTRESS']),
-            eb('movie_person.order', '<=', 20),
-          ]),
-        ),
+        qb.where('movie_person.role', 'in', ['ACTOR', 'ACTRESS']),
       )
       .$if(role === 'director', (qb) =>
         qb.where('movie_person.role', 'in', ['DIRECTOR']),
@@ -155,9 +150,6 @@ export class ReportsService {
       .$if(!!gender, (qb) => qb.where('people.gender', '=', gender!))
       .$if(column === 'average', (qb) => qb.orderBy('avgRating', sortOrder))
       .$if(column === 'count', (qb) => qb.orderBy('appearances', sortOrder))
-      .$if(column === 'average', (qb) =>
-        qb.having((eb) => eb.fn.count('histories.id'), '>=', 5),
-      )
       .groupBy([
         'people.id',
         'people.tmdb_id',

@@ -12,6 +12,21 @@ export class TagsService {
   constructor(private prisma: PrismaService) {}
 
   async create({ colorHex, name, userId }: Prisma.TagUncheckedCreateInput) {
+    const tagExists = await this.prisma.tag.findFirst({
+      where: {
+        AND: [
+          {
+            name: { equals: name.trim(), mode: 'insensitive' },
+          },
+          {
+            userId,
+          },
+        ],
+      },
+    })
+    if (tagExists) {
+      throw new ForbiddenException(`Tag ${name} already exists for this user`)
+    }
     return await this.prisma.tag.create({
       select: {
         id: true,
@@ -58,11 +73,16 @@ export class TagsService {
   }
 
   async findOne(id: string) {
-    return await this.prisma.tag.findUnique({
+    const tag = await this.prisma.tag.findUnique({
       where: {
         id,
       },
     })
+
+    if (!tag) {
+      throw new NotFoundException(`Tag ${id} not found`)
+    }
+    return tag
   }
 
   async update(
@@ -102,9 +122,10 @@ export class TagsService {
       throw new ForbiddenException()
     }
 
-    return await this.prisma.tag.delete({
+    await this.prisma.tag.delete({
       where: {
         id,
+        userId,
       },
     })
   }

@@ -174,7 +174,6 @@ export class UserHistoriesService {
               .selectFrom('movies')
               .selectAll()
               .select((eb) => [
-                'histories.id',
                 jsonArrayFrom(
                   eb
                     .selectFrom('movie_ratings')

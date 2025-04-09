@@ -18,7 +18,7 @@ import { UpdateTagDto } from './dto/update-tag.dto'
 import { TagsService } from './tags.service'
 
 @ApiBearerAuth()
-@Controller('tags')
+@Controller('me/tags')
 export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 

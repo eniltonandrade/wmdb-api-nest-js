@@ -8,12 +8,12 @@ import { ZodValidationPipe } from '@/pipes/zod-validation.pipe'
 import { updateUserBodySchema, UpdateUserDto } from './dto/update-user.dto'
 import { UsersService } from './users.service'
 
-@Controller('user')
+@Controller('me')
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
   @ApiBearerAuth()
-  @Get()
+  @Get('/profile')
   get(@CurrentUser() user: UserPayload) {
     return this.userService.get(user.sub)
   }

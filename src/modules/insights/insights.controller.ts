@@ -24,19 +24,19 @@ import {
   YearStatsQueryParamsDto,
   yearStatsQueryParamsSchema,
 } from './dto/year-stats-query-params.dto'
-import { ReportsService } from './reports.service'
+import { InsightsService } from './insights.service'
 
-@Controller('user/history/reports')
+@Controller('me/insights')
 @ApiBearerAuth()
-export class ReportsController {
-  constructor(private readonly reportsService: ReportsService) {}
+export class InsightsController {
+  constructor(private readonly insightsService: InsightsService) {}
 
   @Get()
   async getUserHistoryReport(@CurrentUser() user: UserPayload) {
-    return await this.reportsService.getUserHistoryReport(user.sub)
+    return await this.insightsService.getUserHistoryReport(user.sub)
   }
 
-  @Get('/person')
+  @Get('/people')
   @ApiQuery({ name: 'sort_by', required: false, type: String })
   @ApiQuery({ name: 'gender', required: false, type: String })
   @ApiQuery({ name: 'role', required: false, type: Number })
@@ -50,7 +50,7 @@ export class ReportsController {
     @Query(new ZodValidationPipe(personStatsQueryParamsSchema))
     query: PersonStatsQueryParamsDto,
   ) {
-    return await this.reportsService.getPersonStats(user.sub, query)
+    return await this.insightsService.getPersonStats(user.sub, query)
   }
 
   @Get('/genres')
@@ -64,7 +64,7 @@ export class ReportsController {
     @Query(new ZodValidationPipe(genreStatsQueryParamsSchema))
     query: GenreStatsQueryParamsDto,
   ) {
-    return await this.reportsService.getGenresStats(user.sub, query)
+    return await this.insightsService.getGenresStats(user.sub, query)
   }
 
   @Get('/companies')
@@ -79,10 +79,10 @@ export class ReportsController {
     @Query(new ZodValidationPipe(companiesStatsQueryParamsSchema))
     query: CompaniesStatsQueryParamsDto,
   ) {
-    return await this.reportsService.getCompaniesStats(user.sub, query)
+    return await this.insightsService.getCompaniesStats(user.sub, query)
   }
 
-  @Get('/watched-year')
+  @Get('/watched-years')
   @ApiQuery({ name: 'sort_by', required: false, type: String })
   @ApiQuery({ name: 'year', required: false, type: String })
   @ApiQuery({ name: 'selected_rating', required: false, type: String })
@@ -92,10 +92,10 @@ export class ReportsController {
     @Query(new ZodValidationPipe(yearStatsQueryParamsSchema))
     query: YearStatsQueryParamsDto,
   ) {
-    return await this.reportsService.getWatchedYearStats(user.sub, query)
+    return await this.insightsService.getWatchedYearStats(user.sub, query)
   }
 
-  @Get('/release-year')
+  @Get('/release-years')
   @ApiQuery({ name: 'sort_by', required: false, type: String })
   @ApiQuery({ name: 'year', required: false, type: String })
   @ApiQuery({ name: 'selected_rating', required: false, type: String })
@@ -105,10 +105,10 @@ export class ReportsController {
     @Query(new ZodValidationPipe(yearStatsQueryParamsSchema))
     query: YearStatsQueryParamsDto,
   ) {
-    return await this.reportsService.getReleaseYearStats(user.sub, query)
+    return await this.insightsService.getReleaseYearStats(user.sub, query)
   }
 
-  @Get('/cast-ranking')
+  @Get('/people/rankings')
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'gender', required: false, type: String })
   @ApiQuery({ name: 'role', required: false, type: Number })
@@ -118,7 +118,7 @@ export class ReportsController {
     @CurrentUser()
     user: UserPayload,
   ) {
-    return await this.reportsService.getCastRankingForUser(user.sub, query)
+    return await this.insightsService.getCastRankingForUser(user.sub, query)
   }
 
   @Get('/retrospective/:year')
@@ -132,6 +132,6 @@ export class ReportsController {
     @CurrentUser() user: UserPayload,
     @Param('year') year: string,
   ) {
-    return await this.reportsService.getUserRetrospective(user.sub, +year)
+    return await this.insightsService.getUserRetrospective(user.sub, +year)
   }
 }

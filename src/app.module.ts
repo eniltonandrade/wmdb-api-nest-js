@@ -11,11 +11,11 @@ import { JwtAuthGuard } from './modules/auth/jwt-auth.guard'
 import { CompaniesModule } from './modules/companies/companies.module'
 import { GenresModule } from './modules/genres/genres.module'
 import { HistoriesModule } from './modules/histories/histories.module'
+import { InsightsModule } from './modules/insights/insights.module'
 import { MoviesModule } from './modules/movies/movies.module'
 import { PeopleModule } from './modules/people/people.module'
-import { ReportsModule } from './modules/reports/reports.module'
+import { TagsModule } from './modules/tags/tags.module'
 import { UsersModule } from './modules/users/users.module'
-import { TagsModule } from './modules/tags/tags.module';
 
 @Module({
   imports: [
@@ -32,7 +32,7 @@ import { TagsModule } from './modules/tags/tags.module';
     PeopleModule,
     CompaniesModule,
     HistoriesModule,
-    ReportsModule,
+    InsightsModule,
     TagsModule,
   ],
   controllers: [],
