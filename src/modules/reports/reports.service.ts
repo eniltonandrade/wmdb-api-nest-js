@@ -84,10 +84,22 @@ export class ReportsService {
       .where('user_id', '=', userId)
       .executeTakeFirst()
 
+    const activityByDayOfWeek = await this.kysely
+      .selectFrom('histories')
+      .select([
+        sql<number>`EXTRACT(DOW FROM date)::int`.as('weekday'),
+        sql<number>`COUNT(*)`.as('count'),
+      ])
+      .where('histories.user_id', '=', userId)
+      .groupBy('weekday')
+      .orderBy('weekday')
+      .execute()
+
     return {
       averageRating: Number(result?.average.toFixed(1)) || 0,
-      count: Number(result?.total) || 0,
-      totalRuntime: Number(result?.totalRuntime) || 0,
+      movieCount: result?.total || 0,
+      totalRuntime: result?.totalRuntime || 0,
+      activityByDayOfWeek,
     }
   }
 
@@ -200,6 +212,7 @@ export class ReportsService {
       .where('user_id', '=', userId)
       .$if(!!id, (qb) => qb.where('genre_id', '=', id!))
       .$if(!!tmdb_id, (qb) => qb.where('genres.tmdb_id', '=', tmdb_id!))
+      .$if(column === 'name', (qb) => qb.orderBy('genres.name', sortOrder))
       .$if(column === 'average', (qb) => qb.orderBy('avgRating', sortOrder))
       .$if(column === 'count', (qb) => qb.orderBy('appearances', sortOrder))
       .groupBy(['genres.id', 'genres.tmdb_id', 'genres.name'])
@@ -483,80 +496,90 @@ export class ReportsService {
     const end = new Date(`${year + 1}-01-01`)
 
     const [
-      totalWatched,
-      averageRatingData,
-      mostActiveMonth,
+      movieData,
+      activityByMonth,
       firstMovie,
       lastMovie,
       bestRated,
       worstRated,
-      mostWatchedGenre,
+      activityByGenre,
       mostWatchedCompany,
       mostWatchedPerson,
+      activityByDayOfWeek,
     ] = await Promise.all([
-      this.getTotalWatched(userId, start, end),
       this.getAverageRating(userId, start, end),
-      this.getMostActiveMonth(userId, start, end),
+      this.getQuantityByMonth(userId, start, end),
       this.getFirstMovie(userId, start, end),
       this.getLastMovie(userId, start, end),
       this.getBestRated(userId, start, end),
       this.getWorstRated(userId, start, end),
-      this.getMostWatchedGenre(userId, start, end),
+      this.getActivityByGenre(userId, start, end),
       this.getMostWatchedCompany(userId, start, end),
       this.getMostWatchedPerson(userId, start, end),
+      this.getQuantityDayOfWeek(userId, start, end),
     ])
 
     return {
       year,
-      totalWatched: Number(totalWatched?.count ?? 0),
-      averageRating: Number(averageRatingData?.average.toFixed(2) ?? 0),
-      mostActiveMonth,
+      movieData: {
+        ...movieData,
+        averageRating: Number(movieData?.averageRating.toFixed(2)) || 0,
+      },
+      activityByDayOfWeek,
+      activityByMonth,
       firstMovie,
       lastMovie,
       bestRated,
       worstRated,
-      mostWatchedGenre,
+      activityByGenre,
       mostWatchedPerson,
       mostWatchedCompany,
     }
-  }
-
-  private async getTotalWatched(userId: string, start: Date, end: Date) {
-    return this.kysely
-      .selectFrom('histories as history')
-      .select((eb) => eb.fn.countAll<number>().as('count'))
-      .where('history.user_id', '=', userId)
-      .where('history.date', '>=', start)
-      .where('history.date', '<', end)
-      .executeTakeFirst()
   }
 
   private async getAverageRating(userId: string, start: Date, end: Date) {
     return this.kysely
       .selectFrom('histories as history')
       .innerJoin('movies', 'movies.id', 'history.movie_id')
-      .select((eb) => eb.fn.count<number>('history.id').as('count'))
-      .select((eb) => eb.fn.avg<number>('movies.average_rating').as('average'))
+      .select([
+        (eb) => eb.fn.count<number>('history.id').as('totalWatched'),
+        (eb) => eb.fn.sum<number>('movies.runtime').as('totalRuntime'),
+        (eb) => eb.fn.avg<number>('movies.average_rating').as('averageRating'),
+      ])
       .where('history.user_id', '=', userId)
       .where('history.date', '>=', start)
       .where('history.date', '<', end)
       .executeTakeFirst()
   }
 
-  private async getMostActiveMonth(userId: string, start: Date, end: Date) {
+  private async getQuantityByMonth(userId: string, start: Date, end: Date) {
     return this.kysely
       .selectFrom('histories')
       .select((qb) => [
-        sql<number>`extract(month from histories.date)`.as('month'),
+        sql<number>`extract(month from histories.date)::int`.as('month'),
         qb.fn.countAll<number>().as('count'),
       ])
       .where('histories.user_id', '=', userId)
       .where('histories.date', '>=', start)
       .where('histories.date', '<', end)
       .groupBy('month')
-      .orderBy('count', 'desc')
-      .limit(1)
-      .executeTakeFirst()
+      .orderBy('month')
+      .execute()
+  }
+
+  private async getQuantityDayOfWeek(userId: string, start: Date, end: Date) {
+    return this.kysely
+      .selectFrom('histories')
+      .select([
+        sql<number>`EXTRACT(DOW FROM date)::int`.as('weekday'),
+        sql<number>`COUNT(*)`.as('count'),
+      ])
+      .where('histories.user_id', '=', userId)
+      .where('histories.date', '>=', start)
+      .where('histories.date', '<', end)
+      .groupBy('weekday')
+      .orderBy('weekday')
+      .execute()
   }
 
   private async getFirstMovie(userId: string, start: Date, end: Date) {
@@ -613,19 +636,22 @@ export class ReportsService {
       .executeTakeFirst()
   }
 
-  private async getMostWatchedGenre(userId: string, start: Date, end: Date) {
+  private async getActivityByGenre(userId: string, start: Date, end: Date) {
     return this.kysely
       .selectFrom('histories')
       .innerJoin('movie_genres', 'movie_genres.movie_id', 'histories.movie_id')
       .innerJoin('genres', 'genres.id', 'movie_genres.genre_id')
-      .select(['genres.name', (eb) => eb.fn.count('genres.id').as('count')])
+      .select([
+        'genres.id',
+        'genres.name',
+        (eb) => eb.fn.count('genres.id').as('count'),
+      ])
       .where('histories.user_id', '=', userId)
       .where('histories.date', '>=', start)
       .where('histories.date', '<', end)
       .groupBy('genres.id')
-      .orderBy('count', 'desc')
-      .limit(1)
-      .executeTakeFirst()
+      .orderBy('genres.name')
+      .execute()
   }
 
   private async getMostWatchedPerson(userId: string, start: Date, end: Date) {
@@ -633,7 +659,12 @@ export class ReportsService {
       .selectFrom('histories')
       .innerJoin('movie_person', 'movie_person.movie_id', 'histories.movie_id')
       .innerJoin('people', 'people.id', 'movie_person.person_id')
-      .select(['people.name', (eb) => eb.fn.count('people.id').as('count')])
+      .select([
+        'people.name',
+        'people.id',
+        'people.tmdb_id',
+        (eb) => eb.fn.count('people.id').as('count'),
+      ])
       .where('histories.user_id', '=', userId)
       .where('histories.date', '>=', start)
       .where('histories.date', '<', end)
@@ -655,6 +686,9 @@ export class ReportsService {
       .innerJoin('companies', 'companies.id', 'movie_companies.company_id')
       .select([
         'companies.name',
+        'companies.id',
+        'companies.tmdb_id',
+        'companies.logo_path',
         (eb) => eb.fn.count('companies.id').as('count'),
       ])
       .where('histories.user_id', '=', userId)

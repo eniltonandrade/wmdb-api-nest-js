@@ -10,6 +10,7 @@ import { PrismaService } from './prisma/prisma.service'
 
 const logger = new Logger('DATABASE')
 types.setTypeParser(types.builtins.INT8, (val) => Number(val))
+types.setTypeParser(types.builtins.INT4, (val) => Number(val))
 
 @Module({
   imports: [
