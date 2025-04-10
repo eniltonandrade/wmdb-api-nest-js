@@ -6,6 +6,7 @@ import { DB } from 'prisma/generated/types'
 
 import { PAGE_SIZE } from '@/common/constants/app.constants'
 
+import { PeopleService } from '../people/people.service'
 import { UsersService } from '../users/users.service'
 import { CompaniesStatsQueryParamsDto } from './dto/company-stats-query-params.dto'
 import { GenreStatsQueryParamsDto } from './dto/genre-stats-query-params.dto'
@@ -18,6 +19,7 @@ export class InsightsService {
   constructor(
     @InjectKysely() private readonly kysely: Kysely<DB>,
     private usersService: UsersService,
+    private peopleService: PeopleService,
   ) {}
 
   private async getQueryParams(
@@ -483,6 +485,34 @@ export class InsightsService {
     }
   }
 
+  async getPersonInsight(userId: string, personId: string) {
+    const [
+      person,
+      data,
+      moviesCountByRoles,
+      favoriteGenre,
+      favoriteCompany,
+      frequentCollaborators,
+    ] = await Promise.all([
+      this.peopleService.findOne(personId),
+      this.getPersonInsightData(userId, personId),
+      this.getMovieCountByRole(userId, personId),
+      this.getPersonFavoriteGenre(userId, personId),
+      this.getPersonFavoriteCompany(userId, personId),
+      this.getPersonFrequentCollaborators(userId, personId),
+    ])
+
+    return {
+      person,
+      ...data,
+      averageRating: Number(data?.averageRating.toFixed(2)) || 0,
+      moviesCountByRoles,
+      favoriteGenre,
+      favoriteCompany,
+      frequentCollaborators,
+    }
+  }
+
   async getUserRetrospective(userId: string, year: number) {
     const start = new Date(`${year}-01-01`)
     const end = new Date(`${year + 1}-01-01`)
@@ -689,6 +719,139 @@ export class InsightsService {
       .groupBy(['companies.id'])
       .orderBy('count', 'desc')
       .limit(1)
+      .executeTakeFirst()
+  }
+
+  private async getMovieCountByRole(userId: string, personId: string) {
+    return await this.kysely
+      .selectFrom('histories')
+      .innerJoin('movies', 'movies.id', 'histories.movie_id')
+      .innerJoin('movie_person', 'movie_person.movie_id', 'movies.id')
+      .select(['movie_person.role'])
+      .select(({ fn }) => fn.count('movies.id').as('count'))
+      .where('histories.user_id', '=', userId)
+      .where('movie_person.person_id', '=', personId)
+      .groupBy(['movie_person.role'])
+      .execute()
+  }
+
+  private async getPersonFavoriteGenre(userId: string, personId: string) {
+    const genresSubquery = this.kysely
+      .selectFrom('histories')
+      .innerJoin('movies', 'movies.id', 'histories.movie_id')
+      .innerJoin('movie_person', 'movie_person.movie_id', 'movies.id')
+      .innerJoin('movie_genres', 'movie_genres.movie_id', 'movies.id')
+      .innerJoin('genres', 'movie_genres.genre_id', 'genres.id')
+      .select(['movies.title', 'genres.id', 'genres.name'])
+      .where('histories.user_id', '=', userId)
+      .where('movie_person.person_id', '=', personId)
+      .groupBy(['movies.title', 'genres.id', 'genres.name'])
+      .distinct()
+      .as('genres')
+
+    return await this.kysely
+      .selectFrom(genresSubquery)
+      .select(({ fn }) => [
+        'genres.id',
+        'genres.name',
+        fn.count('genres.name').as('count'),
+      ])
+      .orderBy('count', 'desc')
+      .limit(1)
+      .groupBy(['genres.id', 'genres.name'])
+      .executeTakeFirst()
+  }
+
+  private async getPersonFavoriteCompany(userId: string, personId: string) {
+    const companiesSubquery = this.kysely
+      .selectFrom('histories')
+      .innerJoin('movies', 'movies.id', 'histories.movie_id')
+      .innerJoin('movie_person', 'movie_person.movie_id', 'movies.id')
+      .innerJoin('movie_companies', 'movie_companies.movie_id', 'movies.id')
+      .innerJoin('companies', 'movie_companies.company_id', 'companies.id')
+      .select([
+        'movies.title',
+        'companies.id',
+        'companies.name',
+        'companies.logo_path',
+      ])
+      .where('histories.user_id', '=', userId)
+      .where('movie_person.person_id', '=', personId)
+      .groupBy([
+        'movies.title',
+        'companies.id',
+        'companies.name',
+        'companies.logo_path',
+      ])
+      .distinct()
+      .as('companies')
+
+    return await this.kysely
+      .selectFrom(companiesSubquery)
+      .select(({ fn }) => [
+        'companies.id',
+        'companies.name',
+        'companies.logo_path',
+        fn.count('companies.name').as('count'),
+      ])
+      .orderBy('count', 'desc')
+      .limit(1)
+      .groupBy(['companies.id', 'companies.name', 'companies.logo_path'])
+      .executeTakeFirst()
+  }
+
+  private async getPersonFrequentCollaborators(
+    userId: string,
+    personId: string,
+  ) {
+    return await this.kysely
+      .selectFrom('movie_person as p1')
+      .innerJoin(
+        'movie_person as p2',
+        (join) =>
+          join
+            .onRef('p1.movie_id', '=', 'p2.movie_id')
+            .onRef('p1.person_id', '!=', 'p2.person_id'), // exclude self
+      )
+      .innerJoin('people as collaborator', 'collaborator.id', 'p2.person_id')
+      .select([
+        'p2.person_id as id',
+        'collaborator.name',
+        'collaborator.profile_path',
+        'p2.role',
+        sql`COUNT(*)`.as('count'),
+      ])
+      .where('p1.person_id', '=', personId) // personId is the main person
+      .groupBy([
+        'p2.person_id',
+        'collaborator.name',
+        'collaborator.profile_path',
+        'p2.role',
+      ])
+      .orderBy('count', 'desc')
+      .limit(3)
+      .execute()
+  }
+
+  private async getPersonInsightData(userId: string, personId: string) {
+    const query = this.kysely
+      .selectFrom('histories')
+      .innerJoin('movies', 'movies.id', 'histories.movie_id')
+      .innerJoin('movie_person', 'movie_person.movie_id', 'movies.id')
+      .select(['movies.id', 'movies.average_rating', 'movies.runtime'])
+      .where('histories.user_id', '=', userId)
+      .where('movie_person.person_id', '=', personId)
+      .groupBy(['movies.id', 'movies.average_rating', 'movies.runtime'])
+      .distinct()
+      .as('movies')
+
+    return await this.kysely
+      .selectFrom(query)
+      .select(({ fn }) => [
+        fn.countAll<number>().as('movieCount'),
+        fn.avg<number>('movies.average_rating').as('averageRating'),
+        fn.sum<number>('movies.runtime').as('totalRuntime'),
+      ])
       .executeTakeFirst()
   }
 }

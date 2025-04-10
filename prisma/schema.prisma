@@ -182,8 +182,8 @@ model PersonOnMovies {
   person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
   movie  Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
-  @@id([personId, movieId])
-  @@unique([personId, movieId, character])
+  @@id([personId, movieId, role])
+  @@unique([personId, movieId, role])
   @@map("movie_person")
 }
 

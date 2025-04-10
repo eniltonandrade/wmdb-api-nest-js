@@ -29,9 +29,24 @@ export class PeopleService {
     }
   }
 
-  async findOne(id: number): Promise<Person> {
-    const person = await this.prisma.person.findUnique({
-      where: { tmdbId: id },
+  async findOne(id: string) {
+    const convertedNumber = Number(id)
+    const tmdbId = isNaN(convertedNumber) ? 0 : convertedNumber
+    const person = await this.prisma.person.findFirst({
+      select: {
+        id: true,
+        name: true,
+        profilePath: true,
+        tmdbId: true,
+      },
+      where: {
+        OR: [
+          {
+            tmdbId,
+          },
+          { id },
+        ],
+      },
     })
 
     if (!person) {
@@ -90,9 +105,10 @@ export class PeopleService {
 
     const sameRoleExists = await this.prisma.personOnMovies.findUnique({
       where: {
-        personId_movieId: {
+        personId_movieId_role: {
           personId: personFoundOrCreated.id,
           movieId: data.movieId,
+          role: data.role,
         },
       },
     })

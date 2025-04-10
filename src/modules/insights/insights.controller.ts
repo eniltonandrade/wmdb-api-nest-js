@@ -134,4 +134,17 @@ export class InsightsController {
   ) {
     return await this.insightsService.getUserRetrospective(user.sub, +year)
   }
+
+  @Get('/people/:personId')
+  async getPersonInsight(
+    @CurrentUser() user: UserPayload,
+    @Param('personId') personId: string,
+  ) {
+    const insight = await this.insightsService.getPersonInsight(
+      user.sub,
+      personId,
+    )
+
+    return insight
+  }
 }
