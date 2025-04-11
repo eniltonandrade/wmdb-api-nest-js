@@ -9,9 +9,7 @@ export const personStatsQueryParamsSchema = z.object({
   sort_by: statsSortByOptionsSchema,
   gender: z.coerce.number().optional(),
   role: z.enum(['cast', 'director', 'writer', 'producer']).optional(),
-  id: z.string().optional(),
   query: z.string().optional(),
-  tmdb_id: z.coerce.number().optional(),
   selected_rating: z
     .enum(['IMDB', 'TMDB', 'ROTTEN_TOMATOES', 'METACRITIC'])
     .optional()

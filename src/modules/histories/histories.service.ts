@@ -37,7 +37,6 @@ export class HistoriesService {
   }
 
   async findOneByUserAndMovie(userId: string, movieId: string) {
-    console.log('movieId', movieId)
     const convertedNumber = Number(movieId)
     const tmdbId = isNaN(convertedNumber) ? 0 : convertedNumber
 

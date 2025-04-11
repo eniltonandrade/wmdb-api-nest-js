@@ -7,8 +7,6 @@ export const genreStatsSortByOptionsSchema = z
 
 export const genreStatsQueryParamsSchema = z.object({
   sort_by: genreStatsSortByOptionsSchema,
-  id: z.string().optional(),
-  tmdb_id: z.coerce.number().optional(),
   selected_rating: z
     .enum(['IMDB', 'TMDB', 'ROTTEN_TOMATOES', 'METACRITIC'])
     .optional()
