@@ -38,7 +38,7 @@ export class MoviesController {
       title,
       tmdb_id,
     } = body
-    const movie = await this.moviesService.create({
+    return await this.moviesService.create({
       imdbId: imdb_id,
       originalTitle: original_title,
       releaseDate: release_date,
@@ -48,9 +48,6 @@ export class MoviesController {
       posterPath: poster_path,
       runtime,
     })
-    return {
-      result: movie,
-    }
   }
 
   @Get('/:id')

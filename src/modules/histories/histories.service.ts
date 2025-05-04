@@ -3,7 +3,6 @@ import {
   forwardRef,
   Inject,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 
@@ -75,7 +74,7 @@ export class HistoriesService {
     })
 
     if (!history) {
-      throw new NotFoundException()
+      return
     }
 
     return {

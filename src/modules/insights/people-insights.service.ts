@@ -31,7 +31,6 @@ export class PeopleInsightsService {
       .innerJoin('movie_person as mp', 'mp.movie_id', 'm.id')
       .innerJoin('people as p', 'p.id', 'mp.person_id')
       .where('h.user_id', '=', userId)
-
       .$if(role === 'director', (qb) => qb.where('mp.role', 'in', ['DIRECTOR']))
       .$if(role === 'producer', (qb) => qb.where('mp.role', 'in', ['PRODUCER']))
       .$if(role === 'writer', (qb) => qb.where('mp.role', 'in', ['WRITER']))
@@ -40,6 +39,7 @@ export class PeopleInsightsService {
         'm.id as movieId',
         'm.average_rating as averageRating',
         'p.id as personId',
+        'p.tmdb_id as tmdbId',
         'p.name as personName',
         'p.profile_path as profilePath',
       ])
@@ -55,7 +55,12 @@ export class PeopleInsightsService {
     const actorMap = new Map<
       string,
       {
-        person: { id: string; name: string; profilePath: string | null }
+        person: {
+          id: string
+          name: string
+          profilePath: string | null
+          tmdbId: number
+        }
         ratings: number[]
       }
     >()
@@ -67,6 +72,7 @@ export class PeopleInsightsService {
             id: row.personId,
             name: row.personName,
             profilePath: row.profilePath,
+            tmdbId: row.tmdbId,
           },
           ratings: [],
         })
@@ -87,9 +93,9 @@ export class PeopleInsightsService {
 
         return {
           ...person,
-          score: parseFloat(score.toFixed(2)),
+          score: parseFloat(score.toFixed(1)),
           appearances: v,
-          avgRating: parseFloat(R.toFixed(2)),
+          avgRating: parseFloat(R.toFixed(1)),
         }
       },
     )
@@ -178,20 +184,20 @@ export class PeopleInsightsService {
   }
 
   async getPersonInsight(userId: string, personId: string) {
+    const person = await this.peopleService.findOne(personId)
+
     const [
-      person,
       data,
       moviesCountByRoles,
       favoriteGenre,
       favoriteCompany,
       frequentCollaborators,
     ] = await Promise.all([
-      this.peopleService.findOne(personId),
-      this.getPersonInsightData(userId, personId),
-      this.getMovieCountByRole(userId, personId),
-      this.getPersonFavoriteGenre(userId, personId),
-      this.getPersonFavoriteCompany(userId, personId),
-      this.getPersonFrequentCollaborators(userId, personId),
+      this.getPersonInsightData(userId, person.id),
+      this.getMovieCountByRole(userId, person.id),
+      this.getPersonFavoriteGenre(userId, person.id),
+      this.getPersonFavoriteCompany(userId, person.id),
+      this.getPersonFrequentCollaborators(userId, person.id),
     ])
 
     return {
@@ -297,16 +303,20 @@ export class PeopleInsightsService {
             .onRef('p1.person_id', '!=', 'p2.person_id'), // exclude self
       )
       .innerJoin('people as collaborator', 'collaborator.id', 'p2.person_id')
+      .innerJoin('histories', 'histories.movie_id', 'p1.movie_id')
       .select([
         'p2.person_id as id',
+        'collaborator.tmdb_id',
         'collaborator.name',
         'collaborator.profile_path',
         'p2.role',
         sql`COUNT(*)`.as('count'),
       ])
-      .where('p1.person_id', '=', personId) // personId is the main person
+      .where('p1.person_id', '=', personId)
+      .where('histories.user_id', '=', userId)
       .groupBy([
         'p2.person_id',
+        'collaborator.tmdb_id',
         'collaborator.name',
         'collaborator.profile_path',
         'p2.role',
@@ -323,19 +333,25 @@ export class PeopleInsightsService {
       .innerJoin('movie_person', 'movie_person.movie_id', 'movies.id')
       .select([
         'movies.id',
+        'movies.tmdb_id',
         'movies.average_rating',
         'movies.runtime',
         'movies.title',
         'movies.poster_path',
+        'movie_person.role',
+        'movie_person.character',
       ])
       .where('histories.user_id', '=', userId)
       .where('movie_person.person_id', '=', personId)
       .groupBy([
         'movies.id',
+        'movies.tmdb_id',
         'movies.average_rating',
         'movies.runtime',
         'movies.title',
         'movies.poster_path',
+        'movie_person.role',
+        'movie_person.character',
       ])
       .distinct()
       .as('movies')
@@ -343,11 +359,14 @@ export class PeopleInsightsService {
     const movieList = await this.kysely
       .selectFrom(query)
       .selectAll()
-      .orderBy('average_rating asc')
+      .orderBy('average_rating desc')
       .execute()
 
-    const highestRated = movieList.at(-1)
-    const lowestRated = movieList.at(0)
+    // First 3 items
+    const highestRatedMovies = movieList.slice(0, 3)
+
+    // Last 3 items
+    const lowestRatedMovies = movieList.slice(-3).reverse()
 
     const statistics = await this.kysely
       .selectFrom(query)
@@ -360,8 +379,8 @@ export class PeopleInsightsService {
 
     return {
       ...statistics,
-      highestRated,
-      lowestRated,
+      highestRatedMovies,
+      lowestRatedMovies,
     }
   }
 }

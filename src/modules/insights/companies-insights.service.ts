@@ -38,6 +38,7 @@ export class CompaniesInsightsService {
         'companies.id',
         'companies.tmdb_id',
         'companies.name',
+        'companies.logo_path',
         fn.count<number>('histories.id').as('appearances'),
         fn.avg<number>(averageBy).as('avgRating'),
       ])

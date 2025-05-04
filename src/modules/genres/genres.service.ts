@@ -36,8 +36,18 @@ export class GenresService {
   }
 
   async findOne(id: string): Promise<Genre> {
-    const genre = await this.prisma.genre.findUnique({
-      where: { id },
+    const convertedNumber = Number(id)
+    const tmdbId = isNaN(convertedNumber) ? 0 : convertedNumber
+
+    const genre = await this.prisma.genre.findFirst({
+      where: {
+        OR: [
+          {
+            tmdbId,
+          },
+          { id },
+        ],
+      },
     })
 
     if (!genre) {

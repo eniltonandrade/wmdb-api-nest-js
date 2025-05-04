@@ -5,7 +5,6 @@ import { DB } from 'prisma/generated/types'
 
 import { getQueryParams } from '@/helpers/get-query-params'
 
-import { PeopleService } from '../people/people.service'
 import { UsersService } from '../users/users.service'
 import { YearStatsQueryParamsDto } from './dto/year-stats-query-params.dto'
 
@@ -14,14 +13,13 @@ export class YearsInsightsService {
   constructor(
     @InjectKysely() private readonly kysely: Kysely<DB>,
     private usersService: UsersService,
-    private peopleService: PeopleService,
   ) {}
 
   async getReleaseYearsInsights(
     userId: string,
     params: YearStatsQueryParamsDto,
   ) {
-    const { page, sort_by, selected_rating } = params
+    const { page, sort_by, selected_rating, year, query } = params
 
     const user = await this.usersService.getPreferredRatingSource(userId)
 
@@ -29,30 +27,30 @@ export class YearsInsightsService {
       await getQueryParams(page, sort_by, selected_rating, user)
 
     const dbQuery = this.kysely
-      .selectFrom([
-        'histories',
-        'movie_ratings',
-        'movie_genres',
-        'genres',
-        'movies',
-      ])
+      .selectFrom(['histories', 'movies', 'movie_ratings'])
       .select(({ fn }) => [
-        'genres.id',
-        'genres.tmdb_id',
-        'genres.name',
-        fn.count<number>('histories.id').as('appearances'),
+        sql<number>`extract(year from movies.release_date)`.as('year'),
+        fn.count<number>('histories.id').as('count'),
         fn.avg<number>(averageBy).as('avgRating'),
       ])
-      .whereRef('movie_genres.movie_id', '=', 'histories.movie_id')
+      .whereRef('histories.movie_id', '=', 'movies.id')
       .whereRef('histories.movie_id', '=', 'movie_ratings.movie_id')
-      .whereRef('movie_genres.genre_id', '=', 'genres.id')
-      .whereRef('movie_genres.movie_id', '=', 'movies.id')
-      .where('movie_ratings.rating_source', '=', ratingSource)
       .where('user_id', '=', userId)
-      .$if(column === 'name', (qb) => qb.orderBy('genres.name', sortOrder))
+      .where('movie_ratings.rating_source', '=', ratingSource)
+      .$if(!!query, (qb) =>
+        qb
+          .where('movies.release_date', '>=', new Date(`${query}-01-01`))
+          .where('release_date', '<=', new Date(`${Number(query) + 1}-01-01`)),
+      )
+      .$if(!!year, (qb) =>
+        qb
+          .where('movies.release_date', '>=', new Date(`${year}-01-01`))
+          .where('release_date', '<=', new Date(`${Number(year) + 1}-01-01`)),
+      )
       .$if(column === 'average', (qb) => qb.orderBy('avgRating', sortOrder))
-      .$if(column === 'count', (qb) => qb.orderBy('appearances', sortOrder))
-      .groupBy(['genres.id', 'genres.tmdb_id', 'genres.name'])
+      .$if(column === 'count', (qb) => qb.orderBy('count', sortOrder))
+      .$if(column === 'year', (qb) => qb.orderBy('year', sortOrder))
+      .groupBy(['year'])
 
     const subQuery = dbQuery.as('sub_query')
 
@@ -67,6 +65,7 @@ export class YearsInsightsService {
       total,
       results: results.map((result) => ({
         ...result,
+        year: +result.year,
         avgRating: Number(result.avgRating.toFixed(1)),
       })),
     }
@@ -126,6 +125,7 @@ export class YearsInsightsService {
       total,
       results: results.map((result) => ({
         ...result,
+        year: +result.year,
         avgRating: Number(result.avgRating.toFixed(1)),
       })),
     }

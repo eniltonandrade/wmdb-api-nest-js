@@ -25,9 +25,9 @@ export const SortByOptionsSchema = z
 export const queryStringSchema = z
   .object({
     page: z.coerce.number().min(1).default(1),
-    genre_id: z.string().uuid().optional(),
-    person_id: z.string().uuid().optional(),
-    company_id: z.string().uuid().optional(),
+    genre_id: z.string().optional(),
+    person_id: z.string().optional(),
+    company_id: z.string().optional(),
     tag_id: z.string().uuid().optional(),
     release_year: z.string().optional(),
     watched_year: z.string().optional(),

@@ -9,6 +9,7 @@ import {
   MOVIE_FILTER_COLUMNS,
   PAGE_SIZE,
 } from '@/common/constants/app.constants'
+import { convertIdNumber } from '@/helpers/convert-id-number'
 
 import { UsersService } from '../users/users.service'
 import { queryStringDto } from './dto/query-histories.dto'
@@ -56,7 +57,7 @@ export class UserHistoriesService {
 
     const result = await this.usersService.getPreferredRatingSource(userId)
 
-    let selectedRatingSource: RatingSource = result?.preferredRating || 'IMDB'
+    let selectedRatingSource: RatingSource = result?.preferredRating || 'TMDB'
 
     switch (column) {
       case 'rating_imdb':
@@ -102,7 +103,14 @@ export class UserHistoriesService {
             'movie_person.movie_id',
             'histories.movie_id',
           )
-          .where('movie_person.person_id', '=', person_id!),
+          .innerJoin('people', 'movie_person.person_id', 'people.id')
+
+          .where((eb) =>
+            eb.or([
+              eb('movie_person.person_id', '=', person_id!),
+              eb('people.tmdb_id', '=', convertIdNumber(person_id!)),
+            ]),
+          ),
       )
       .$if(!!tag_id, (qb) =>
         qb
@@ -116,7 +124,13 @@ export class UserHistoriesService {
             'movie_genres.movie_id',
             'histories.movie_id',
           )
-          .where('movie_genres.genre_id', '=', genre_id!),
+          .innerJoin('genres', 'genres.id', 'movie_genres.genre_id')
+          .where((eb) =>
+            eb.or([
+              eb('movie_genres.genre_id', '=', genre_id!),
+              eb('genres.tmdb_id', '=', convertIdNumber(genre_id!)),
+            ]),
+          ),
       )
       .$if(!!company_id, (qb) =>
         qb
@@ -125,7 +139,13 @@ export class UserHistoriesService {
             'movie_companies.movie_id',
             'histories.movie_id',
           )
-          .where('movie_companies.company_id', '=', company_id!),
+          .innerJoin('companies', 'movie_companies.company_id', 'companies.id')
+          .where((eb) =>
+            eb.or([
+              eb('movie_companies.company_id', '=', company_id!),
+              eb('companies.tmdb_id', '=', convertIdNumber(company_id!)),
+            ]),
+          ),
       )
       .$if(!!watched_year, (qb) =>
         qb
@@ -154,7 +174,6 @@ export class UserHistoriesService {
         'histories.date',
         'histories.rating',
         'histories.review',
-        'movies.average_rating',
         'movies.release_date',
         'movie_ratings.value',
         jsonObjectFrom(
