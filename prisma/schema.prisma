@@ -9,6 +9,11 @@ generator client {
   previewFeatures = ["typedSql"]
 }
 
+generator kysely {
+  provider = "prisma-kysely"
+  output   = "./generated"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
