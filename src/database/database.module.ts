@@ -36,7 +36,7 @@ types.setTypeParser(types.builtins.INT4, (val) => Number(val))
             password: env.get('DATABASE_PASSWORD'),
             port: 5432,
             max: 10,
-            ssl: false,
+            ssl: env.get('DATABASE_SSL'),
           }),
         }),
         plugins: [new CamelCasePlugin()],
