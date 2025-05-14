@@ -31,7 +31,7 @@ export class InsightsService {
       .execute()
 
     return {
-      averageRating: Number(result?.average.toFixed(1)) || 0,
+      averageRating: Number(result?.average?.toFixed(1)) || 0,
       movieCount: result?.total || 0,
       totalRuntime: result?.totalRuntime || 0,
       activityByDayOfWeek,

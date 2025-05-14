@@ -52,6 +52,6 @@ export async function getQueryParams(
     column,
     sortOrder,
     averageBy,
-    ratingSource,
+    ratingSource: ratingSource ?? 'TMDB',
   }
 }
