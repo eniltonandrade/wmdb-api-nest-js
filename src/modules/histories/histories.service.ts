@@ -108,6 +108,23 @@ export class HistoriesService {
     })
   }
 
+  async getTmdbIdsFromHistories(userId: string) {
+    const histories = await this.prisma.history.findMany({
+      where: {
+        userId,
+      },
+      select: {
+        movie: {
+          select: {
+            tmdbId: true,
+          },
+        },
+      },
+    })
+    const tmdbIds = histories.map((history) => history.movie.tmdbId)
+    return tmdbIds
+  }
+
   async manageHistoryTags(userId: string, historyId: string, tagIds: string[]) {
     const existingTags = await this.tagsService.findMany(userId, tagIds)
 

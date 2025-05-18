@@ -63,6 +63,11 @@ export class HistoriesController {
     return this.userHistoriesService.fetchUserHistory(user.sub, query)
   }
 
+  @Get('/tmdb-ids')
+  async getTmdbIds(@CurrentUser() user: UserPayload) {
+    return this.historiesService.getTmdbIdsFromHistories(user.sub)
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() body: UpdateHistoryDto) {
     const { date, rating, review } = body
