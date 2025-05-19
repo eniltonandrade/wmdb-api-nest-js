@@ -83,7 +83,7 @@ export class PeopleInsightsService {
 
     const allRatings = movieActors.map((row) => row.averageRating)
     const C = allRatings.reduce((sum, r) => sum + r, 0) / allRatings.length
-    const m = 5
+    const m = 10
 
     const allActors = Array.from(actorMap.values()).map(
       ({ person, ratings }) => {
@@ -93,7 +93,7 @@ export class PeopleInsightsService {
 
         return {
           ...person,
-          score: parseFloat(score.toFixed(1)),
+          score: parseFloat(score.toFixed(2)),
           appearances: v,
           avgRating: parseFloat(R.toFixed(1)),
         }
